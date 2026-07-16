@@ -18,4 +18,4 @@ EB_SERVICE_ROLE     = "LabRole"
 EB_INSTANCE_PROFILE = "LabInstanceProfile"
 
 # Must match the bucket in infra/backend.hcl
-STATE_BUCKET = "easycart-tfstate-CHANGEME"
+STATE_BUCKET = "easycart-tfstate-mel4821"
