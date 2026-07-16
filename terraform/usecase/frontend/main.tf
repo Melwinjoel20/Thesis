@@ -25,6 +25,13 @@ data "terraform_remote_state" "networking" {
   }
 }
 
+# Resolve the CURRENT Python 3.11 platform — EB rotates version numbers,
+# so a hardcoded name goes stale. This always picks the latest.
+data "aws_elastic_beanstalk_solution_stack" "python311" {
+  most_recent = true
+  name_regex  = "^64bit Amazon Linux 2023 v.+ running Python 3.11$"
+}
+
 data "aws_vpc" "frontend" {
   id = local.frontend_vpc_id
 }
@@ -150,7 +157,7 @@ module "elastic_beanstalk" {
   name_prefix  = "fe"
   name_suffix  = "001"
 
-  solution_stack_name = var.EB_SOLUTION_STACK
+  solution_stack_name = data.aws_elastic_beanstalk_solution_stack.python311.name
   environment_type    = "SingleInstance"
   instance_type       = "t3.micro"
   service_role        = var.EB_SERVICE_ROLE
