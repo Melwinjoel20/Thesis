@@ -36,3 +36,8 @@ output "route_table_ids" {
     database = module.database_vpc.route_table_ids
   }
 }
+
+output "execute_api_endpoint_id" {
+  description = "Hub execute-api Interface endpoint — entry to the internal private API."
+  value       = module.hub_api_ingress.endpoint_ids["execute-api"]
+}

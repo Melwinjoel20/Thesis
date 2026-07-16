@@ -211,3 +211,31 @@ module "lambda" {
     "Spoke"   = "App"
   })
 }
+
+# -----------------------------------------------------------------------------
+# Internal API — private, JWT-authenticated door to the same Lambdas
+# (network entry point — the hub execute-api endpoint — is owned by the
+# networking layer; this layer decides what sits behind it)
+# -----------------------------------------------------------------------------
+module "internal_api" {
+  source = "../../modules/InternalApi"
+
+  product      = var.PRODUCT
+  environment  = var.ENVIRONMENT
+  region       = var.REGION
+  region_short = var.REGION_SHORT
+  name_prefix  = "app"
+  name_suffix  = "001"
+
+  user_pool_arn   = module.cognito.user_pool_arn
+  vpc_endpoint_id = data.terraform_remote_state.networking.outputs.execute_api_endpoint_id
+
+  functions = {
+    for key, name in module.lambda.function_names : key => {
+      function_name = name
+      invoke_arn    = module.lambda.invoke_arns[key]
+    }
+  }
+
+  extra_tags = merge(local.default_tags, { "Spoke" = "App" })
+}

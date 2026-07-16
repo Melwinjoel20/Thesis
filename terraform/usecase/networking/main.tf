@@ -267,3 +267,29 @@ module "gateway_endpoints_database" {
   service_names   = ["dynamodb"]
   extra_tags      = local.default_tags
 }
+
+# -----------------------------------------------------------------------------
+# Hub — execute-api Interface endpoint (entry point for the internal private
+# API Gateway; the API itself lives in the app layer). Reachable from every
+# spoke over the TGW.
+# -----------------------------------------------------------------------------
+module "hub_api_ingress" {
+  source = "../../modules/InterfaceEndpoints"
+
+  product      = var.PRODUCT
+  environment  = var.ENVIRONMENT
+  region       = var.REGION
+  region_short = var.REGION_SHORT
+  name_prefix  = var.HUB_VPC.name_prefix
+  name_suffix  = var.HUB_VPC.name_suffix
+
+  vpc_id        = module.hub_vpc.vpc_id
+  subnet_ids    = [values(module.hub_vpc.subnet_ids)[0]]
+  service_names = ["execute-api"]
+  allowed_cidrs = ["10.0.0.0/8"]
+
+  # Cross-VPC callers use the endpoint-specific DNS name.
+  private_dns_enabled = false
+
+  extra_tags = local.default_tags
+}

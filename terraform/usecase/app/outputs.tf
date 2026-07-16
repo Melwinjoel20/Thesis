@@ -8,3 +8,7 @@ output "cognito_app_client_secret" {
   value     = module.cognito.app_client_secret
   sensitive = true
 }
+output "internal_api_base_url" {
+  description = "Endpoint-specific URL — reachable from any internal VPC via the hub"
+  value       = module.internal_api.base_url
+}
