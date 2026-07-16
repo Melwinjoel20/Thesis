@@ -2,10 +2,6 @@ output "user_pool_id" {
   value = aws_cognito_user_pool.this.id
 }
 
-output "user_pool_arn" {
-  value = aws_cognito_user_pool.this.arn
-}
-
 output "app_client_id" {
   value = aws_cognito_user_pool_client.this.id
 }
@@ -13,7 +9,4 @@ output "app_client_id" {
 output "app_client_secret" {
   value     = aws_cognito_user_pool_client.this.client_secret
   sensitive = true
-}
-
-.auth.${aws_cognito_user_pool_domain.this.cloudfront_distribution}.amazoncognito.com"
 }
