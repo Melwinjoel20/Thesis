@@ -199,3 +199,7 @@ RATE_LIMIT_LOGIN_LIMIT = COGNITO["rate_limit"]["login"]["limit"]
 RATE_LIMIT_LOGIN_WINDOW = COGNITO["rate_limit"]["login"]["window"]
 
 RATE_LIMIT_TABLE = infra_config.get("RATE_LIMIT_TABLE", "RateLimits")
+
+# Lambda function names (written by scripts/generate_config.py) — used by
+# store/cart_api.py to invoke the cart microservices server-side.
+LAMBDA_FUNCTIONS = infra_config.get("lambda_functions", {})

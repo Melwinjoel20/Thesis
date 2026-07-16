@@ -107,10 +107,10 @@ def update_images(region, table_name, mapping):
     items = table.scan().get("Items", [])
 
     for item in items:
-        name_key = item["name"].replace(" ", "").lower()
+        name_key = item["name"].replace(" ", "").replace("_", "").lower()
 
         for file_name, key in mapping.items():
-            if name_key in file_name.replace(" ", "").lower():
+            if name_key in file_name.replace(" ", "").replace("_", "").lower():
                 table.update_item(
                     Key={"product_id": item["product_id"]},
                     UpdateExpression="SET image = :u",
@@ -136,17 +136,20 @@ def main():
 
     # Create + Seed DynamoDB tables
     SAMPLE_DATA = {
-        "Phones": [
-            {"name": "iPhone 14 Pro", "description": "A16 Bionic chip", "price": 1099},
-            {"name": "Samsung Galaxy S23", "description": "AMOLED Display", "price": 999}
+        "MenClothes": [
+            {"name": "Classic Green Sweater", "description": "Warm knit sweater in forest green", "price": 69},
+            {"name": "Classic White Shirt", "description": "Crisp cotton formal shirt", "price": 59},
+            {"name": "Essential Polo Tshirt Set", "description": "Two-pack everyday polo tees", "price": 49}
         ],
-        "Laptops": [
-            {"name": "MacBook Air M2", "description": "Apple M2", "price": 1199},
-            {"name": "Dell XPS 13", "description": "Intel i7 13th Gen", "price": 1399}
+        "WomenClothes": [
+            {"name": "Leopard Mesh Top", "description": "Sheer mesh top, leopard print", "price": 49},
+            {"name": "Striped Sweatshirt", "description": "Relaxed-fit striped sweatshirt", "price": 39},
+            {"name": "White Ribbed Top", "description": "Fitted ribbed knit top", "price": 29}
         ],
-        "Accessories": [
-            {"name": "AirPods Pro", "description": "Noise Cancellation", "price": 249},
-            {"name": "Logitech MX Master 3", "description": "Wireless mouse", "price": 99}
+        "KidsClothes": [
+            {"name": "Christmas Sweater", "description": "Festive holiday knit", "price": 25},
+            {"name": "Construction Print Sweatshirt", "description": "Diggers and trucks print", "price": 19},
+            {"name": "Red Reindeer Sweatshirt", "description": "Red sweatshirt with reindeer", "price": 22}
         ]
     }
 

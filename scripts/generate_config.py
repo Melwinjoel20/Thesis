@@ -68,9 +68,17 @@ def main() -> int:
         }
     )
 
-    # Cart architecture decision pending (server-side vs API Gateway):
-    # blank the old, dead API Gateway URLs so nothing calls a stale endpoint.
-    config["lambda_cart_endpoints"] = {k: "" for k in config.get("lambda_cart_endpoints", {})}
+    # Server-side cart: templates call these local Django endpoints, and
+    # Django invokes the private Lambdas via boto3 (store/cart_api.py).
+    config["lambda_cart_endpoints"] = {
+        "add_to_cart": "/store/api/cart/add/",
+        "view_cart": "/store/api/cart/view/",
+        "remove_cart_item": "/store/api/cart/remove/",
+        "place_order": "/store/api/order/place/",
+        "tax_calculator": "/store/api/tax/",
+    }
+    # Function names the proxy views invoke (map key -> deployed name).
+    config["lambda_functions"] = app.get("lambda_function_names", {})
 
     if frontend:
         config["eb_application_name"] = frontend.get("eb_application_name", config.get("eb_application_name"))

@@ -259,7 +259,7 @@ const PLACE_ORDER_URL = "{{ PLACE_ORDER_URL }}";
 const USER_ID         = "{{ request.session.user_id|default:'' }}";
 const ID_TOKEN        = "{{ request.session.cognito_id_token|default:'' }}";
 const LOGIN_URL       = "{% url 'login' %}";
-const TAX_API_URL     = "https://nxk175t5ol.execute-api.us-east-1.amazonaws.com/prod/tax_calculator";
+const TAX_API_URL     = "/store/api/tax/";  // served by Django -> Lambda (server-side)
 const FARE_API_URL    = "https://0v2jl32vw0.execute-api.us-east-1.amazonaws.com/PROD/fare-calculator";
 const DISCOUNT_API    = "https://yjb1bzfi1i.execute-api.us-east-1.amazonaws.com";
 

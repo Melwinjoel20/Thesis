@@ -2,8 +2,16 @@ from django.contrib import admin
 from django.urls import path
 from . import views
 from . import admins_view as views_admin
+from . import cart_api
 
 urlpatterns = [
+     # Server-side cart API — Django proxies to the private Lambdas (boto3)
+     path("api/cart/add/", cart_api.add_to_cart, name="api_cart_add"),
+     path("api/cart/view/", cart_api.view_cart, name="api_cart_view"),
+     path("api/cart/remove/", cart_api.remove_cart_item, name="api_cart_remove"),
+     path("api/order/place/", cart_api.place_order, name="api_order_place"),
+     path("api/tax/", cart_api.tax_calculator, name="api_tax"),
+
      path('base/',views.base,name="base"),
      path('home/',views.home,name="home"),
      path("register/", views.register, name="register"),

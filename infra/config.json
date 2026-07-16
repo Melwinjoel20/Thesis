@@ -1,11 +1,11 @@
 {
     "region": "us-east-1",
-    "user_pool_id": "us-east-1_D1lmEyW2b",
-    "app_client_id": "39d1sdgv3nprjd2jgc8ed3lk2a",
-    "domain_url": "https://easycart-1773850121.auth.us-east-1.amazoncognito.com",
-    "s3_logo_url": "https://easycart1-proj-nci.s3.us-east-1.amazonaws.com/images/EasyCartLogo.png",
+    "user_pool_id": "us-east-1_n8KqHMFPv",
+    "app_client_id": "6ad3h2md9niton2251e09kvhre",
+    "domain_url": "https://app-easycart-dev.auth.d3oia8etllorh5.cloudfront.net.amazoncognito.com",
+    "s3_logo_url": "https://easycart-private-dev-ue1-001.s3.us-east-1.amazonaws.com/images/EasyCartLogo.png",
     "dev_mode": false,
-    "bucket_name": "easycart1-proj-nci",
+    "bucket_name": "easycart-private-dev-ue1-001",
     "s3_logo_path": "images/EasyCartLogo.png",
     "local_logo_file": "infra/EasyCartLogo.png",
     "product_images_folder": "infra/product_images",
@@ -16,14 +16,14 @@
     ],
     "cart_table": "UserCart",
     "lambda_cart_endpoints": {
-        "add_to_cart": "https://nxk175t5ol.execute-api.us-east-1.amazonaws.com/prod/add-to-cart",
-        "view_cart": "https://nxk175t5ol.execute-api.us-east-1.amazonaws.com/prod/view-cart",
-        "remove_cart_item": "https://nxk175t5ol.execute-api.us-east-1.amazonaws.com/prod/remove-cart-item",
-        "place_order": "https://nxk175t5ol.execute-api.us-east-1.amazonaws.com/prod/place-order",
-        "tax_calculator":"https://nxk175t5ol.execute-api.us-east-1.amazonaws.com/prod/tax_calculator"
+        "add_to_cart": "",
+        "view_cart": "",
+        "remove_cart_item": "",
+        "place_order": "",
+        "tax_calculator": ""
     },
     "orders_table": "Orders",
-    "sns_topic_arn": "arn:aws:sns:us-east-1:637423279760:EasyCartOrderNotifications",
+    "sns_topic_arn": "arn:aws:sns:us-east-1:298550728605:EasyCartOrderNotifications",
     "rate_limit": {
         "login": {
             "limit": 3,
@@ -31,10 +31,10 @@
         }
     },
     "RATE_LIMIT_TABLE": "RateLimits",
-    "app_client_secret": "17l6nsl55omcpumhgp71bdldp22sstt26nel5d4go1jd32qanh75",
+    "app_client_secret": "7hvkqer5ngmpeiimom7c38mvv25q5r923em20nvfjeoa9j231or",
     "admin_users_table": "EasyCartAdminUsers",
-    "eb_application_name": "easycart-proj-ebs",
-    "eb_environment_name": "easycart-proj-env",
+    "eb_application_name": "fe-ebs-app-easycart-dev-ue1-001",
+    "eb_environment_name": "fe-ebs-env-easycart-dev-ue1-001",
     "eb_cname_prefix": "easycart",
     "eb_service_role": "LabRole",
     "eb_instance_profile": "LabInstanceProfile"
