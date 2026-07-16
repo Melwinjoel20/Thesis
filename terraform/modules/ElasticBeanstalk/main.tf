@@ -58,6 +58,19 @@ resource "aws_elastic_beanstalk_environment" "this" {
 
   # Exactly one instance — LoadBalanced only because a fully private VPC
   # cannot host SingleInstance (EB insists on an EIP + internet gateway).
+  # Django has no route at "/" — health-check /home/ instead (302 = login redirect)
+  setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "HealthCheckPath"
+    value     = "/home/"
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:environment:process:default"
+    name      = "MatcherHTTPCode"
+    value     = "200,302"
+  }
+
   setting {
     namespace = "aws:autoscaling:asg"
     name      = "MinSize"

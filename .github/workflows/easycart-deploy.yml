@@ -134,6 +134,37 @@ jobs:
         if: env.DO_APPLY == 'true'
         run: python3 scripts/generate_config.py
 
+      - name: Vendor Python wheels (instance has no internet — pip must install offline)
+        if: env.DO_APPLY == 'true'
+        run: |
+          pip download -r requirements.txt -d vendor \
+            --only-binary=:all: \
+            --platform manylinux2014_x86_64 \
+            --implementation cp --python-version 311
+          # Tell pip on the EB instance to use ONLY the bundled wheels
+          printf -- '--no-index\n--find-links vendor/\n' | cat - requirements.txt > requirements.tmp
+          mv requirements.tmp requirements.txt
+          echo "vendored $(ls vendor | wc -l) wheels"
+
+      - name: Setup Python 3.11 (match the EB platform)
+        if: env.DO_APPLY == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # The EB instance lives in a VPC with NO internet route, so it cannot
+      # reach PyPI. Download every wheel here (the runner has internet) and
+      # ship them inside the bundle; requirements.txt is rewritten to install
+      # offline from that folder.
+      - name: Vendor Python dependencies into the bundle
+        if: env.DO_APPLY == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip download -r requirements.txt -d wheelhouse
+          ls wheelhouse | head
+          printf -- '--no-index\n--find-links ./wheelhouse\n%s\n' "$(cat requirements.txt)" > requirements.txt
+          head -5 requirements.txt
+
       - name: Build EB application bundle
         if: env.DO_APPLY == 'true'
         run: |
@@ -165,8 +196,21 @@ jobs:
             --environment-name "$ENV" \
             --version-label "$LABEL"
 
-          echo "Waiting for environment to become Ready..."
-          aws elasticbeanstalk wait environment-updated --environment-names "$ENV"
+          echo "Waiting for environment to become Ready (up to 25 min)..."
+          STATUS=""
+          for i in $(seq 1 50); do
+            STATUS=$(aws elasticbeanstalk describe-environments --environment-names "$ENV" \
+              --query 'Environments[0].Status' --output text)
+            echo "[$i/50] Status: $STATUS"
+            [ "$STATUS" = "Ready" ] && break
+            sleep 30
+          done
+          [ "$STATUS" = "Ready" ] || { echo "Environment never became Ready"; exit 1; }
+
+          VERSION=$(aws elasticbeanstalk describe-environments --environment-names "$ENV" \
+            --query 'Environments[0].VersionLabel' --output text)
+          echo "Running version: $VERSION"
+          [ "$VERSION" = "$LABEL" ] || { echo "Deployed version mismatch — deploy failed on instances"; exit 1; }
 
           aws elasticbeanstalk describe-environments \
             --environment-names "$ENV" \
