@@ -18,8 +18,3 @@ output "app_client_secret" {
 output "domain_url" {
   value = "https://${aws_cognito_user_pool_domain.this.domain}.auth.${aws_cognito_user_pool_domain.this.cloudfront_distribution}.amazoncognito.com"
 }
-
-output "app_client_secret" {
-  value     = aws_cognito_user_pool_client.this.client_secret
-  sensitive = true
-}
