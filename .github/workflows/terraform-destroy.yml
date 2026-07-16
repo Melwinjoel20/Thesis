@@ -3,6 +3,13 @@
 # Destroys stacks in REVERSE dependency order. Run from the Actions tab;
 # type "destroy" to confirm. Uses the same three AWS secrets as the deploy
 # workflow (refresh them if your lab session rotated).
+#
+# NOTE: destroy commands use -lock-timeout=5m so that a stale S3 state lock
+# (e.g. left behind by a previously cancelled run) doesn't fail the job
+# immediately — Terraform will retry acquiring the lock for up to 5 minutes
+# before giving up. If a run is cancelled mid-stack, wait for the current
+# "::group::destroy X" step to finish before cancelling again, so its lock
+# is released cleanly.
 # =============================================================================
 
 name: terraform-destroy
@@ -56,6 +63,6 @@ jobs:
           for s in $stacks; do
             echo "::group::destroy $s"
             terraform -chdir="terraform/usecase/$s" init -input=false -backend-config=../../backend.hcl
-            terraform -chdir="terraform/usecase/$s" destroy -input=false -auto-approve
+            terraform -chdir="terraform/usecase/$s" destroy -input=false -auto-approve -lock-timeout=5m
             echo "::endgroup::"
           done
