@@ -46,6 +46,32 @@ resource "aws_elastic_beanstalk_environment" "this" {
 
   setting {
     namespace = "aws:ec2:vpc"
+    name      = "ELBSubnets"
+    value     = join(",", var.subnet_ids)
+  }
+
+  setting {
+    namespace = "aws:elasticbeanstalk:environment"
+    name      = "LoadBalancerType"
+    value     = "application"
+  }
+
+  # Exactly one instance — LoadBalanced only because a fully private VPC
+  # cannot host SingleInstance (EB insists on an EIP + internet gateway).
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MinSize"
+    value     = "1"
+  }
+
+  setting {
+    namespace = "aws:autoscaling:asg"
+    name      = "MaxSize"
+    value     = "1"
+  }
+
+  setting {
+    namespace = "aws:ec2:vpc"
     name      = "AssociatePublicIpAddress"
     value     = "false" # no public IPs on EC2 instances
   }

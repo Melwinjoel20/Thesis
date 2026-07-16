@@ -6,7 +6,7 @@ variable "REGION_SHORT" { type = string }
 variable "ALLOWED_INGRESS_CIDRS" {
   type        = list(string)
   description = "CIDRs allowed to reach the EB instances (Hub + App spokes)."
-  default     = ["10.0.0.0/16", "10.2.0.0/16"]
+  default     = ["10.0.0.0/16", "10.2.0.0/16", "10.1.0.0/16"]
 }
 
 variable "EB_SOLUTION_STACK" {

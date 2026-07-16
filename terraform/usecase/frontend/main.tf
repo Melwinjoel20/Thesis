@@ -25,13 +25,6 @@ data "terraform_remote_state" "networking" {
   }
 }
 
-# Resolve the CURRENT Python 3.11 platform — EB rotates version numbers,
-# so a hardcoded name goes stale. This always picks the latest.
-data "aws_elastic_beanstalk_solution_stack" "python311" {
-  most_recent = true
-  name_regex  = "^64bit Amazon Linux 2023 v.+ running Python 3.11$"
-}
-
 data "aws_vpc" "frontend" {
   id = local.frontend_vpc_id
 }
@@ -135,7 +128,7 @@ resource "aws_vpc_endpoint" "eb_interface" {
   vpc_id              = local.frontend_vpc_id
   service_name        = "com.amazonaws.${var.REGION}.${each.value}"
   vpc_endpoint_type   = "Interface"
-  subnet_ids          = local.frontend_subnet_ids
+  subnet_ids          = [local.frontend_subnet_ids[0]] # one AZ is enough for endpoints — halves interface-endpoint cost
   security_group_ids  = [aws_security_group.vpce.id]
   private_dns_enabled = true
 
@@ -157,8 +150,8 @@ module "elastic_beanstalk" {
   name_prefix  = "fe"
   name_suffix  = "001"
 
-  solution_stack_name = data.aws_elastic_beanstalk_solution_stack.python311.name
-  environment_type    = "SingleInstance"
+  solution_stack_name = var.EB_SOLUTION_STACK
+  environment_type    = "LoadBalanced" # private VPC: internal ALB (SingleInstance needs an EIP/IGW)
   instance_type       = "t3.micro"
   service_role        = var.EB_SERVICE_ROLE
   instance_profile    = var.EB_INSTANCE_PROFILE

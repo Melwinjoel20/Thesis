@@ -52,6 +52,13 @@ FRONTEND_VPC = {
       availability_zone = "us-east-1a"
       type              = "private"
     }
+    # Second AZ: an internal ALB (required for EB in a private VPC —
+    # SingleInstance always demands an EIP/IGW) needs two subnets.
+    "private-subnet-b" = {
+      cidr_block        = "10.1.2.0/24"
+      availability_zone = "us-east-1b"
+      type              = "private"
+    }
   }
 
   route_tables = {
@@ -60,6 +67,7 @@ FRONTEND_VPC = {
 
   route_table_associations = {
     "private-subnet-a-assoc" = { subnet_key = "private-subnet-a", route_table_key = "private-rt" }
+    "private-subnet-b-assoc" = { subnet_key = "private-subnet-b", route_table_key = "private-rt" }
   }
 }
 
