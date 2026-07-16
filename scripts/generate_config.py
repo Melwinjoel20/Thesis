@@ -80,6 +80,9 @@ def main() -> int:
     # Function names the proxy views invoke (map key -> deployed name).
     config["lambda_functions"] = app.get("lambda_function_names", {})
 
+    # Internal JWT-authenticated API (private API Gateway via the hub).
+    config["internal_api_base_url"] = app.get("internal_api_base_url", "")
+
     if frontend:
         config["eb_application_name"] = frontend.get("eb_application_name", config.get("eb_application_name"))
         config["eb_environment_name"] = frontend.get("eb_environment_name", config.get("eb_environment_name"))
