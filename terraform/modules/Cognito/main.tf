@@ -50,4 +50,10 @@ resource "aws_cognito_user_pool_client" "this" {
 resource "aws_cognito_user_pool_domain" "this" {
   domain       = "${var.name_prefix}-${var.product}-${var.environment}"
   user_pool_id = aws_cognito_user_pool.this.id
+
+  # New domains default to Managed Login (v2), and Cognito disables
+  # PrivateLink access for pools configured with it. The Django app only
+  # uses the cognito-idp SDK through the VPC endpoint (never the hosted
+  # UI), so force the classic version to keep PrivateLink working.
+  managed_login_version = 1
 }
