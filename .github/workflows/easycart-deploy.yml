@@ -1,0 +1,173 @@
+# =============================================================================
+# EasyCart — unified deploy pipeline (infrastructure + application)
+#
+# PRs touching terraform/ or app code  -> build lambda zips, terraform
+#                                         validate + networking plan
+# Pushes to main                       -> terraform apply all stacks in
+#                                         dependency order, then generate
+#                                         config.json from outputs, bundle
+#                                         the Django app, deploy it to EB
+#
+# Stack order: networking -> storage -> database -> app -> frontend -> EB app
+#
+# Required repo secrets:
+#   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_SESSION_TOKEN
+#   (Learner Lab creds rotate — re-paste all three each lab session)
+#
+# One-time: create the tf state bucket and replace CHANGEME (terraform/backend.hcl)
+# =============================================================================
+
+name: easycart-deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      include_compute:
+        description: "Also deploy usecase/compute (ping-test instances)"
+        type: boolean
+        default: false
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+  AWS_DEFAULT_REGION: us-east-1
+  TF_IN_AUTOMATION: "true"
+  DO_APPLY: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+
+concurrency:
+  group: easycart-${{ github.ref }}
+  cancel-in-progress: false # never kill an apply mid-run
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.12.2"
+          terraform_wrapper: false
+
+      - name: Build Lambda zips (real app code in infra/lambda)
+        run: bash scripts/build_lambdas.sh
+
+      # ---------------- Terraform stacks, dependency order ----------------
+      - name: networking — init/validate/plan
+        working-directory: terraform/usecase/networking
+        run: |
+          terraform init -input=false -backend-config=../../backend.hcl
+          terraform validate
+          terraform plan -input=false -out=tfplan
+      - name: networking — apply
+        if: env.DO_APPLY == 'true'
+        working-directory: terraform/usecase/networking
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: storage — apply
+        if: env.DO_APPLY == 'true'
+        working-directory: terraform/usecase/storage
+        run: |
+          terraform init -input=false -backend-config=../../backend.hcl
+          terraform validate
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      - name: database — apply
+        if: env.DO_APPLY == 'true'
+        working-directory: terraform/usecase/database
+        run: |
+          terraform init -input=false -backend-config=../../backend.hcl
+          terraform validate
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      - name: app — apply
+        if: env.DO_APPLY == 'true'
+        working-directory: terraform/usecase/app
+        run: |
+          terraform init -input=false -backend-config=../../backend.hcl
+          terraform validate
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      - name: frontend — apply
+        if: env.DO_APPLY == 'true'
+        working-directory: terraform/usecase/frontend
+        run: |
+          terraform init -input=false -backend-config=../../backend.hcl
+          terraform validate
+          terraform plan -input=false -out=tfplan
+          terraform apply -input=false -auto-approve tfplan
+
+      - name: compute (optional) — ping-test instances
+        if: github.event_name == 'workflow_dispatch' && inputs.include_compute
+        working-directory: terraform/usecase/compute
+        run: |
+          terraform init -input=false -backend-config=../../backend.hcl
+          terraform apply -input=false -auto-approve
+
+      # On PRs just validate the downstream stacks (their remote-state reads
+      # need networking outputs, so plan isn't possible pre-apply).
+      - name: PR — validate downstream stacks
+        if: env.DO_APPLY != 'true'
+        run: |
+          for s in storage database app frontend compute; do
+            echo "::group::validate $s"
+            terraform -chdir="terraform/usecase/$s" init -input=false -backend=false
+            terraform -chdir="terraform/usecase/$s" validate
+            echo "::endgroup::"
+          done
+
+      # ---------------- Application deploy to Elastic Beanstalk ----------------
+      - name: Generate infra/config.json from terraform outputs
+        if: env.DO_APPLY == 'true'
+        run: python3 scripts/generate_config.py
+
+      - name: Build EB application bundle
+        if: env.DO_APPLY == 'true'
+        run: |
+          zip -qr app.zip . \
+            -x "env/*" "terraform/*" ".git/*" ".github/*" \
+               "library local/*" "**/__pycache__/*" "*.pyc" \
+               "infra/lambda/*.zip" "app.zip"
+          unzip -l app.zip | tail -3
+
+      - name: Deploy bundle to Elastic Beanstalk
+        if: env.DO_APPLY == 'true'
+        run: |
+          set -euo pipefail
+          BUCKET=$(terraform -chdir=terraform/usecase/storage output -raw bucket_name)
+          APP=$(terraform -chdir=terraform/usecase/frontend output -raw eb_application_name)
+          ENV=$(terraform -chdir=terraform/usecase/frontend output -raw eb_environment_name)
+          LABEL="deploy-${{ github.run_id }}-${{ github.run_attempt }}"
+          KEY="eb-bundles/${LABEL}.zip"
+
+          echo "Uploading bundle to s3://${BUCKET}/${KEY}"
+          aws s3 cp app.zip "s3://${BUCKET}/${KEY}"
+
+          aws elasticbeanstalk create-application-version \
+            --application-name "$APP" \
+            --version-label "$LABEL" \
+            --source-bundle S3Bucket="$BUCKET",S3Key="$KEY"
+
+          aws elasticbeanstalk update-environment \
+            --environment-name "$ENV" \
+            --version-label "$LABEL"
+
+          echo "Waiting for environment to become Ready..."
+          aws elasticbeanstalk wait environment-updated --environment-names "$ENV"
+
+          aws elasticbeanstalk describe-environments \
+            --environment-names "$ENV" \
+            --query 'Environments[0].{Status:Status,Health:Health,Version:VersionLabel}'

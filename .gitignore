@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+# Virtual environment
+env/
+venv/
+.env
+
+# Analytics temp files
+analytics_data/
+
+# AWS
+.aws/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+# --- terraform ---
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+
+# --- lambda build artifacts (CI rebuilds via scripts/build_lambdas.sh) ---
+infra/lambda/*.zip

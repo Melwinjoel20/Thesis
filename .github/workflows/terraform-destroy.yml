@@ -1,0 +1,61 @@
+# =============================================================================
+# Manual teardown — Learner Lab budget saver.
+# Destroys stacks in REVERSE dependency order. Run from the Actions tab;
+# type "destroy" to confirm. Uses the same three AWS secrets as the deploy
+# workflow (refresh them if your lab session rotated).
+# =============================================================================
+
+name: terraform-destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm teardown of ALL stacks'
+        required: true
+      keep_networking:
+        description: "Keep the networking layer (VPCs/TGW/endpoints) for faster redeploys"
+        type: boolean
+        default: false
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+  AWS_DEFAULT_REGION: us-east-1
+  TF_IN_AUTOMATION: "true"
+
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    if: inputs.confirm == 'destroy'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.12.2"
+          terraform_wrapper: false
+
+      # Zips must exist so the app stack's filebase64sha256() can evaluate.
+      - name: Build Lambda zips (needed to evaluate the app stack)
+        run: bash scripts/build_lambdas.sh
+
+      - name: Destroy in reverse order
+        run: |
+          stacks="compute frontend app database storage"
+          if [ "${{ inputs.keep_networking }}" != "true" ]; then
+            stacks="$stacks networking"
+          fi
+          for s in $stacks; do
+            echo "::group::destroy $s"
+            terraform -chdir="terraform/usecase/$s" init -input=false -backend-config=../../backend.hcl
+            terraform -chdir="terraform/usecase/$s" destroy -input=false -auto-approve
+            echo "::endgroup::"
+          done
