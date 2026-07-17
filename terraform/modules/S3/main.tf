@@ -8,7 +8,7 @@
 
 resource "aws_s3_bucket" "this" {
   bucket = var.bucket_name
-
+  force_destroy = true
   tags = merge(var.extra_tags, {
     Name = "${var.name_prefix}-s3-${var.product}-${var.environment}-${var.region_short}-${var.name_suffix}"
   })
