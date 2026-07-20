@@ -293,3 +293,28 @@ module "hub_api_ingress" {
 
   extra_tags = local.default_tags
 }
+
+# -----------------------------------------------------------------------------
+# Point-to-site VPN (AWS Client VPN) — optional, cost-bearing.
+# Connect with the AWS VPN Client, then browse the app on its REAL domain:
+# the EB CNAME resolves publicly to the internal ALB's private IPs, and the
+# VPN provides the route. Toggle off when not demoing (~$0.15+/hr).
+# -----------------------------------------------------------------------------
+module "client_vpn" {
+  count  = var.ENABLE_CLIENT_VPN ? 1 : 0
+  source = "../../modules/ClientVpn"
+
+  product      = var.PRODUCT
+  environment  = var.ENVIRONMENT
+  region       = var.REGION
+  region_short = var.REGION_SHORT
+  name_prefix  = var.HUB_VPC.name_prefix
+  name_suffix  = var.HUB_VPC.name_suffix
+
+  vpc_id                = module.hub_vpc.vpc_id
+  association_subnet_id = values(module.hub_vpc.subnet_ids)[0]
+  spoke_cidrs           = ["10.1.0.0/16", "10.2.0.0/16", "10.3.0.0/16"]
+  vpc_dns_resolver      = "10.0.0.2"
+
+  extra_tags = local.default_tags
+}

@@ -143,3 +143,9 @@ variable "TGW_NAME_SUFFIX" {
   type    = string
   default = "001"
 }
+
+variable "ENABLE_CLIENT_VPN" {
+  type        = bool
+  default     = false
+  description = "Deploy the point-to-site Client VPN (cost-bearing; enable for demos)."
+}

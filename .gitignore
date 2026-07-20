@@ -36,3 +36,4 @@ Thumbs.db
 
 # --- lambda build artifacts (CI rebuilds via scripts/build_lambdas.sh) ---
 infra/lambda/*.zip
+*.ovpn

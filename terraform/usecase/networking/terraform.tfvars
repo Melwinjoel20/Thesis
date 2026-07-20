@@ -126,3 +126,6 @@ DATABASE_VPC = {
 # =============================================================================
 TGW_NAME_PREFIX = "hub"
 TGW_NAME_SUFFIX = "001"
+
+# Point-to-site VPN for accessing the app on its real domain (cost-bearing).
+ENABLE_CLIENT_VPN = true

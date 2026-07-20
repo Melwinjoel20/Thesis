@@ -41,3 +41,17 @@ output "execute_api_endpoint_id" {
   description = "Hub execute-api Interface endpoint — entry to the internal private API."
   value       = module.hub_api_ingress.endpoint_ids["execute-api"]
 }
+
+output "client_vpn_endpoint_id" {
+  value = var.ENABLE_CLIENT_VPN ? module.client_vpn[0].endpoint_id : null
+}
+
+output "client_vpn_certificate_pem" {
+  value     = var.ENABLE_CLIENT_VPN ? module.client_vpn[0].client_certificate_pem : null
+  sensitive = true
+}
+
+output "client_vpn_private_key_pem" {
+  value     = var.ENABLE_CLIENT_VPN ? module.client_vpn[0].client_private_key_pem : null
+  sensitive = true
+}
