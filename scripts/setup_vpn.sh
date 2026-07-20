@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 TFDIR=terraform/usecase/networking
 VPN_ID=$(terraform -chdir=$TFDIR output -raw client_vpn_endpoint_id)
 
-aws ec2 export-client-vpn-client-configuration \
+aws ec2 export-client-vpn-client-configuration --region us-east-1 \
   --client-vpn-endpoint-id "$VPN_ID" \
   --output text > easycart.ovpn
 
