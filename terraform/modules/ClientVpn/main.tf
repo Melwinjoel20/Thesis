@@ -153,4 +153,9 @@ resource "aws_ec2_client_vpn_route" "spokes" {
   client_vpn_endpoint_id = aws_ec2_client_vpn_endpoint.this.id
   destination_cidr_block = each.value
   target_vpc_subnet_id   = aws_ec2_client_vpn_network_association.hub.subnet_id
+
+  timeouts {
+    create = "15m"
+    delete = "15m"
+  }
 }
