@@ -300,6 +300,40 @@ module "hub_api_ingress" {
 # the EB CNAME resolves publicly to the internal ALB's private IPs, and the
 # VPN provides the route. Toggle off when not demoing (~$0.15+/hr).
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Forensic-readiness layer. Declared here because the network-layer records
+# (VPC Flow Logs) and the VPN translation records both belong to the network
+# foundation; the app layer consumes the service/application log groups it
+# creates via remote state.
+# -----------------------------------------------------------------------------
+module "observability" {
+  source = "../../modules/Observability"
+
+  product      = var.PRODUCT
+  environment  = var.ENVIRONMENT
+  region       = var.REGION
+  region_short = var.REGION_SHORT
+  name_prefix  = "obs"
+  name_suffix  = "001"
+
+  vpc_ids = {
+    hub      = module.hub_vpc.vpc_id
+    frontend = module.frontend_vpc.vpc_id
+    app      = module.app_vpc.vpc_id
+    database = module.database_vpc.vpc_id
+  }
+
+  flow_log_role_arn     = data.aws_iam_role.flow_logs.arn
+  log_retention_days    = var.LOG_RETENTION_DAYS
+  flow_log_traffic_type = var.FLOW_LOG_TRAFFIC_TYPE
+
+  extra_tags = local.default_tags
+}
+
+data "aws_iam_role" "flow_logs" {
+  name = var.FLOW_LOG_ROLE_NAME
+}
+
 module "client_vpn" {
   count  = var.ENABLE_CLIENT_VPN ? 1 : 0
   source = "../../modules/ClientVpn"
@@ -313,6 +347,10 @@ module "client_vpn" {
 
   vpc_id                = module.hub_vpc.vpc_id
   association_subnet_id = values(module.hub_vpc.subnet_ids)[0]
+
+  # VPN translation logging (forensic readiness)
+  connection_log_group  = module.observability.vpn_log_group_name
+  connection_log_stream = module.observability.vpn_log_stream_name
   spoke_cidrs           = ["10.1.0.0/16", "10.2.0.0/16", "10.3.0.0/16"]
   vpc_dns_resolver      = "10.0.0.2"
 

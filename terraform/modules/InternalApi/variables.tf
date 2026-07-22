@@ -40,3 +40,9 @@ variable "extra_tags" {
   type    = map(string)
   default = {}
 }
+
+variable "access_log_group_arn" {
+  type        = string
+  description = "CloudWatch log group ARN for identity-attributed access logs. Empty disables."
+  default     = ""
+}

@@ -55,3 +55,26 @@ output "client_vpn_private_key_pem" {
   value     = var.ENABLE_CLIENT_VPN ? module.client_vpn[0].client_private_key_pem : null
   sensitive = true
 }
+
+output "flow_log_group_names" {
+  description = "Per-VPC Flow Log group names (network layer)."
+  value       = module.observability.flow_log_group_names
+}
+
+output "vpn_log_group_name" {
+  description = "Client VPN connection (translation) log group."
+  value       = module.observability.vpn_log_group_name
+}
+
+output "api_access_log_group_arn" {
+  description = "Identity-attributed API access log group ARN (consumed by the app stack)."
+  value       = module.observability.api_log_group_arn
+}
+
+output "api_access_log_group_name" {
+  value = module.observability.api_log_group_name
+}
+
+output "app_correlation_log_group_name" {
+  value = module.observability.app_log_group_name
+}

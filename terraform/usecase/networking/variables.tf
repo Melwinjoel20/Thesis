@@ -149,3 +149,21 @@ variable "ENABLE_CLIENT_VPN" {
   default     = false
   description = "Deploy the point-to-site Client VPN (cost-bearing; enable for demos)."
 }
+
+variable "FLOW_LOG_ROLE_NAME" {
+  type        = string
+  default     = "LabRole"
+  description = "Role the VPC Flow Logs service assumes to write to CloudWatch."
+}
+
+variable "LOG_RETENTION_DAYS" {
+  type        = number
+  default     = 30
+  description = "CloudWatch retention for all forensic log groups."
+}
+
+variable "FLOW_LOG_TRAFFIC_TYPE" {
+  type        = string
+  default     = "ALL"
+  description = "ALL is required for traceability metrics; REJECT alone evidences blocked lateral movement."
+}

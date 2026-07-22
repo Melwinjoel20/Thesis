@@ -127,8 +127,17 @@ resource "aws_ec2_client_vpn_endpoint" "this" {
     root_certificate_chain_arn = aws_acm_certificate.client.arn
   }
 
+  # Connection logging is the "VPN translation log" that the forensic-readiness
+  # literature identifies as universally absent: commodity VPN routers adopt a
+  # no-logging policy, so a private IP observed inside the network cannot be
+  # attributed to a user. Enabling it records, per connection: the certificate
+  # common name (identity), the client's public source address, the private
+  # address assigned from the client CIDR, and connection start/end times --
+  # exactly the tuple required to resolve a flow log record to a human.
   connection_log_options {
-    enabled = false
+    enabled               = var.connection_log_group
+    cloudwatch_log_group  = var.connection_log_group
+    cloudwatch_log_stream = var.connection_log_stream
   }
 
   tags = merge(var.extra_tags, {

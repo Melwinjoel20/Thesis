@@ -40,3 +40,15 @@ variable "extra_tags" {
   type    = map(string)
   default = {}
 }
+
+variable "connection_log_group" {
+  type        = string
+  description = "CloudWatch log group for VPN connection (translation) logs. Empty disables logging."
+  default     = ""
+}
+
+variable "connection_log_stream" {
+  type        = string
+  description = "CloudWatch log stream for VPN connection logs."
+  default     = ""
+}

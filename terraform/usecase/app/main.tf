@@ -230,6 +230,9 @@ module "internal_api" {
   user_pool_arn   = module.cognito.user_pool_arn
   vpc_endpoint_id = data.terraform_remote_state.networking.outputs.execute_api_endpoint_id
 
+  # Identity-attributed access logging (service + authentication layers)
+  access_log_group_arn = data.terraform_remote_state.networking.outputs.api_access_log_group_arn
+
   functions = {
     for key, name in module.lambda.function_names : key => {
       function_name = name

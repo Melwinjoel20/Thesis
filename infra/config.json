@@ -1,8 +1,8 @@
 {
     "region": "us-east-1",
-    "user_pool_id": "us-east-1_n8KqHMFPv",
-    "app_client_id": "6ad3h2md9niton2251e09kvhre",
-    "domain_url": "https://app-easycart-dev.auth.d3oia8etllorh5.cloudfront.net.amazoncognito.com",
+    "user_pool_id": "us-east-1_YiwvDrrlY",
+    "app_client_id": "521ngvc0akrae2ruqa8k3t2i00",
+    "domain_url": "",
     "s3_logo_url": "https://easycart-private-dev-ue1-001.s3.us-east-1.amazonaws.com/images/EasyCartLogo.png",
     "dev_mode": false,
     "bucket_name": "easycart-private-dev-ue1-001",
@@ -16,11 +16,11 @@
     ],
     "cart_table": "UserCart",
     "lambda_cart_endpoints": {
-        "add_to_cart": "",
-        "view_cart": "",
-        "remove_cart_item": "",
-        "place_order": "",
-        "tax_calculator": ""
+        "add_to_cart": "/store/api/cart/add/",
+        "view_cart": "/store/api/cart/view/",
+        "remove_cart_item": "/store/api/cart/remove/",
+        "place_order": "/store/api/order/place/",
+        "tax_calculator": "/store/api/tax/"
     },
     "orders_table": "Orders",
     "sns_topic_arn": "arn:aws:sns:us-east-1:298550728605:EasyCartOrderNotifications",
@@ -31,11 +31,19 @@
         }
     },
     "RATE_LIMIT_TABLE": "RateLimits",
-    "app_client_secret": "7hvkqer5ngmpeiimom7c38mvv25q5r923em20nvfjeoa9j231or",
+    "app_client_secret": "4skocbfp9avt3ekuqsrju8dfa9t9rghqrik2pc512ti2f3pmv70",
     "admin_users_table": "EasyCartAdminUsers",
     "eb_application_name": "fe-ebs-app-easycart-dev-ue1-001",
     "eb_environment_name": "fe-ebs-env-easycart-dev-ue1-001",
     "eb_cname_prefix": "easycart",
     "eb_service_role": "LabRole",
-    "eb_instance_profile": "LabInstanceProfile"
+    "eb_instance_profile": "LabInstanceProfile",
+    "lambda_functions": {
+        "add-to-cart": "app-fn-add-to-cart-easycart-dev-ue1-001",
+        "place-order": "app-fn-place-order-easycart-dev-ue1-001",
+        "remove-cart-item": "app-fn-remove-cart-item-easycart-dev-ue1-001",
+        "tax-calculator": "app-fn-tax-calculator-easycart-dev-ue1-001",
+        "view-cart": "app-fn-view-cart-easycart-dev-ue1-001"
+    },
+    "internal_api_base_url": "https://pto2xuer02-vpce-0a0520d46a33e6dac.execute-api.us-east-1.amazonaws.com/internal"
 }

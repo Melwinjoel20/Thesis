@@ -129,3 +129,8 @@ TGW_NAME_SUFFIX = "001"
 
 # Point-to-site VPN for accessing the app on its real domain (cost-bearing).
 ENABLE_CLIENT_VPN = true
+
+# --- Forensic-readiness layer ---
+FLOW_LOG_ROLE_NAME    = "LabRole"
+LOG_RETENTION_DAYS    = 30
+FLOW_LOG_TRAFFIC_TYPE = "ALL"

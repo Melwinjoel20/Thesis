@@ -109,5 +109,36 @@ resource "aws_api_gateway_stage" "this" {
   deployment_id = aws_api_gateway_deployment.this.id
   stage_name    = var.stage_name
 
+  xray_tracing_enabled = true
+
+  # Private-endpoint access log. The authoriser claims are emitted alongside
+  # the network 5-tuple context, which is what allows a request arriving
+  # through the VPC endpoint to be attributed to a verified identity rather
+  # than only to a source address.
+  dynamic "access_log_settings" {
+    for_each = var.access_log_group_arn != "" ? [1] : []
+    content {
+      destination_arn = var.access_log_group_arn
+      format = jsonencode({
+        requestId       = "$context.requestId"
+        correlationId   = "$context.requestOverride.header.X-Correlation-Id"
+        requestTime     = "$context.requestTime"
+        sourceIp        = "$context.identity.sourceIp"
+        vpceId          = "$context.identity.vpceId"
+        httpMethod      = "$context.httpMethod"
+        resourcePath    = "$context.resourcePath"
+        status          = "$context.status"
+        responseLatency = "$context.responseLatency"
+        # --- authentication layer ---
+        principalId     = "$context.authorizer.principalId"
+        subject         = "$context.authorizer.claims.sub"
+        username        = "$context.authorizer.claims.email"
+        tokenScope      = "$context.authorizer.claims.scope"
+        tokenUse        = "$context.authorizer.claims.token_use"
+        authorizerError = "$context.authorizer.error"
+      })
+    }
+  }
+
   tags = var.extra_tags
 }
