@@ -135,7 +135,7 @@ resource "aws_ec2_client_vpn_endpoint" "this" {
   # address assigned from the client CIDR, and connection start/end times --
   # exactly the tuple required to resolve a flow log record to a human.
   connection_log_options {
-    enabled               = var.connection_log_group
+    enabled               = var.connection_log_group != ""
     cloudwatch_log_group  = var.connection_log_group
     cloudwatch_log_stream = var.connection_log_stream
   }
