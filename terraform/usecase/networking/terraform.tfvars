@@ -3,7 +3,7 @@
 # Run: terraform apply (no -var-file needed, this file is auto-loaded)
 # =============================================================================
 
-PRODUCT      = "hotelbook"
+PRODUCT      = "easycart"
 ENVIRONMENT  = "dev"
 REGION       = "us-east-1"
 REGION_SHORT = "ue1"
