@@ -1,16 +1,3 @@
-# =============================================================================
-# Module: ClientVpn
-# Description: Point-to-site access into the zero-trust network.
-#              AWS Client VPN endpoint, certificate (mutual-TLS) auth, with
-#              the whole PKI generated in Terraform: a throwaway CA signs one
-#              server and one client certificate, imported into ACM.
-#              Split-tunnel: only 10.x traffic rides the VPN. Traffic enters
-#              through the hub and is SNATed to the association ENI, so the
-#              spokes see it as hub-sourced — existing TGW routes and SG
-#              rules apply unchanged.
-# NOTE: private keys live in Terraform state — acceptable for a lab/thesis,
-#       use a real PKI (ACM PCA) in production.
-# =============================================================================
 
 # ---- throwaway PKI ----------------------------------------------------------
 resource "tls_private_key" "ca" {
