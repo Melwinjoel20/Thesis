@@ -231,7 +231,7 @@ module "internal_api" {
   vpc_endpoint_id = data.terraform_remote_state.networking.outputs.execute_api_endpoint_id
 
   # Identity-attributed access logging (service + authentication layers)
-  access_log_group_arn = data.terraform_remote_state.networking.outputs.api_access_log_group_arn
+  access_log_group_arn = ""  # disabled: Learner Lab cannot set account CloudWatch role
 
   functions = {
     for key, name in module.lambda.function_names : key => {

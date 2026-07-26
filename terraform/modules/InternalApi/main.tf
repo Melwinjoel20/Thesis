@@ -109,7 +109,7 @@ resource "aws_api_gateway_stage" "this" {
   deployment_id = aws_api_gateway_deployment.this.id
   stage_name    = var.stage_name
 
-  xray_tracing_enabled = true
+  xray_tracing_enabled = var.access_log_group_arn != ""
 
   # Private-endpoint access log. The authoriser claims are emitted alongside
   # the network 5-tuple context, which is what allows a request arriving
