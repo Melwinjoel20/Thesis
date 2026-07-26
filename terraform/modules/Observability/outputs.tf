@@ -1,6 +1,6 @@
-output "flow_log_group_names" {
-  description = "Per-VPC flow log group names."
-  value       = { for k, v in aws_cloudwatch_log_group.flow : k => v.name }
+output "flow_log_bucket" {
+  description = "S3 bucket holding VPC Flow Logs (per-VPC key prefixes)."
+  value       = aws_s3_bucket.flow.bucket
 }
 
 output "vpn_log_group_name" {

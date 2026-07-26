@@ -1,0 +1,23 @@
+{
+  "window_hours": 2,
+  "generated": "2026-07-26T23:40:28.012639+00:00",
+  "network": {
+    "IT": 0,
+    "Iu": 0,
+    "Tu": 0.0,
+    "vpn_sourced": 0,
+    "per_vpc": {
+      "app": 0,
+      "database": 0,
+      "frontend": 0,
+      "hub": 0
+    }
+  },
+  "service": {
+    "RT": 0,
+    "Ra": 0,
+    "Ts": 0.0,
+    "distinct_principals": 0
+  },
+  "unattributed_sample": []
+}

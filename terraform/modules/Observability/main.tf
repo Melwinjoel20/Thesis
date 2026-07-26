@@ -40,13 +40,51 @@ locals {
 # -----------------------------------------------------------------------------
 # 1. Network layer — VPC Flow Logs (one log group per VPC for clean separation)
 # -----------------------------------------------------------------------------
-resource "aws_cloudwatch_log_group" "flow" {
-  for_each = var.vpc_ids
+# VPC Flow Logs are delivered to S3 rather than CloudWatch Logs. S3 delivery is
+# authorised by a bucket policy rather than an IAM service role, which avoids
+# the constrained-role trust problem in the lab environment, is cheaper, and
+# suits the bulk cross-VPC analysis the traceability metric performs. One
+# bucket holds all four VPCs' logs under per-VPC key prefixes.
+resource "aws_s3_bucket" "flow" {
+  bucket        = "flowlogs-${var.product}-${var.environment}-${var.region_short}-${var.name_suffix}"
+  force_destroy = true
 
-  name              = "/${var.product}/${var.environment}/flowlogs/${each.key}"
-  retention_in_days = var.log_retention_days
+  tags = merge(var.extra_tags, { Name = "flowlogs-${local.base}", Layer = "network" })
+}
 
-  tags = merge(var.extra_tags, { Name = "flowlogs-${each.key}-${local.base}", Layer = "network" })
+resource "aws_s3_bucket_lifecycle_configuration" "flow" {
+  bucket = aws_s3_bucket.flow.id
+  rule {
+    id     = "expire"
+    status = "Enabled"
+    filter {}
+    expiration { days = var.log_retention_days }
+  }
+}
+
+# Delivery principal must be allowed to write, and to read the bucket ACL.
+resource "aws_s3_bucket_policy" "flow" {
+  bucket = aws_s3_bucket.flow.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AWSLogDeliveryWrite"
+        Effect    = "Allow"
+        Principal = { Service = "delivery.logs.amazonaws.com" }
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.flow.arn}/*"
+        Condition = { StringEquals = { "s3:x-amz-acl" = "bucket-owner-full-control" } }
+      },
+      {
+        Sid       = "AWSLogDeliveryAclCheck"
+        Effect    = "Allow"
+        Principal = { Service = "delivery.logs.amazonaws.com" }
+        Action    = ["s3:GetBucketAcl", "s3:ListBucket"]
+        Resource  = aws_s3_bucket.flow.arn
+      }
+    ]
+  })
 }
 
 resource "aws_flow_log" "vpc" {
@@ -54,13 +92,14 @@ resource "aws_flow_log" "vpc" {
 
   vpc_id                   = each.value
   traffic_type             = var.flow_log_traffic_type
-  log_destination_type     = "cloud-watch-logs"
-  log_destination          = aws_cloudwatch_log_group.flow[each.key].arn
-  iam_role_arn             = var.flow_log_role_arn
+  log_destination_type     = "s3"
+  log_destination          = "${aws_s3_bucket.flow.arn}/${each.key}/"
   log_format               = local.flow_log_format
-  max_aggregation_interval = 60 # finest granularity: tighter correlation windows
+  max_aggregation_interval = 60
 
   tags = merge(var.extra_tags, { Name = "flowlog-${each.key}-${local.base}", Layer = "network" })
+
+  depends_on = [aws_s3_bucket_policy.flow]
 }
 
 # -----------------------------------------------------------------------------

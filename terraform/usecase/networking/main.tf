@@ -323,16 +323,12 @@ module "observability" {
     database = module.database_vpc.vpc_id
   }
 
-  flow_log_role_arn     = data.aws_iam_role.flow_logs.arn
   log_retention_days    = var.LOG_RETENTION_DAYS
   flow_log_traffic_type = var.FLOW_LOG_TRAFFIC_TYPE
 
   extra_tags = local.default_tags
 }
 
-data "aws_iam_role" "flow_logs" {
-  name = var.FLOW_LOG_ROLE_NAME
-}
 
 module "client_vpn" {
   count  = var.ENABLE_CLIENT_VPN ? 1 : 0

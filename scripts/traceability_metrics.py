@@ -100,6 +100,57 @@ def in_client_cidr(addr: str, cidr: str) -> bool:
         return False
 
 
+
+def read_flow_logs_s3(bucket: str, prefix: str, start: int, end: int, region: str):
+    """Stream ACCEPT source/pkt-source addresses from S3-delivered flow logs.
+
+    Flow logs land as gzipped text objects under <prefix>/AWSLogs/.../. Each
+    line follows the explicit field order declared in the Observability module:
+    ... srcaddr(6) dstaddr(7) ... action(15) ... pkt-srcaddr(18) ...
+    Field positions are 0-based after splitting on whitespace; the leading
+    fields are version(0) vpc-id(1) subnet-id(2) interface-id(3) account(4)
+    srcaddr(5) dstaddr(6) srcport(7) dstport(8) protocol(9) packets(10)
+    bytes(11) start(12) end(13) action(14) log-status(15) flow-direction(16)
+    pkt-srcaddr(17) pkt-dstaddr(18) traffic-path(19).
+    """
+    import gzip
+    addrs = []
+    token = None
+    keys = []
+    while True:
+        cmd = ["aws", "s3api", "list-objects-v2", "--region", region,
+               "--bucket", bucket, "--prefix", f"{prefix}/",
+               "--query", "Contents[].Key", "--output", "json"]
+        if token:
+            cmd += ["--starting-token", token]
+        try:
+            out = subprocess.check_output(cmd, stderr=subprocess.PIPE).decode()
+            page = json.loads(out) or []
+        except subprocess.CalledProcessError as exc:
+            print(f"  ! list failed for {prefix}: {exc.stderr.decode().strip()}")
+            return addrs
+        keys.extend(page)
+        break  # single page is plenty at lab scale
+
+    for key in keys:
+        try:
+            raw = subprocess.check_output(
+                ["aws", "s3", "cp", f"s3://{bucket}/{key}", "-", "--region", region],
+                stderr=subprocess.DEVNULL)
+            text = gzip.decompress(raw).decode(errors="ignore")
+        except Exception:
+            continue
+        for line in text.splitlines():
+            f = line.split()
+            if len(f) < 18 or f[0] == "version":
+                continue
+            if f[14] != "ACCEPT":
+                continue
+            addrs.append(f[5])   # srcaddr
+            addrs.append(f[17])  # pkt-srcaddr (pre-NAT/ALB rewrite)
+    return addrs
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--hours", type=int, default=24, help="analysis window")
@@ -111,32 +162,23 @@ def main() -> int:
     end = int(datetime.now(timezone.utc).timestamp())
     start = int((datetime.now(timezone.utc) - timedelta(hours=args.hours)).timestamp())
 
-    flow_groups = tf_output(TF_NET, "flow_log_group_names") or {}
+    flow_bucket = tf_output(TF_NET, "flow_log_bucket")
     vpn_group = tf_output(TF_NET, "vpn_log_group_name")
     api_group = tf_output(TF_NET, "api_access_log_group_name")
-    if not flow_groups:
-        print("No flow log groups found - is the networking stack applied?")
+    if not flow_bucket:
+        print("No flow log bucket found - is the networking stack applied?")
         return 1
 
     print(f"Window: {args.hours}h  ({datetime.fromtimestamp(start, timezone.utc):%Y-%m-%d %H:%M} UTC onwards)\n")
 
-    # ---------------- network layer ----------------
-    print("[1/3] Collecting source addresses from VPC Flow Logs")
+    # ---------------- network layer (S3-delivered flow logs) ----------------
+    print("[1/3] Collecting source addresses from VPC Flow Logs (S3)")
     observed: dict[str, set[str]] = defaultdict(set)
-    for role, group in flow_groups.items():
-        rows = cw_query(
-            group,
-            "fields @message | parse @message '* * * * * * * * * * * * * * * * * * * *' "
-            "as version, vpcId, subnetId, eni, account, srcaddr, dstaddr, srcport, dstport, "
-            "protocol, packets, bytes, startT, endT, action, status, direction, pktSrc, pktDst, path "
-            "| filter action = 'ACCEPT' | stats count() by srcaddr, pktSrc",
-            start, end, args.region,
-        )
-        for r in rows:
-            for key in ("srcaddr", "pktSrc"):
-                a = r.get(key, "")
-                if a and a not in ("-", "") and not is_infrastructure(a):
-                    observed[role].add(a)
+    roles = ["hub", "frontend", "app", "database"]
+    for role in roles:
+        for addr in read_flow_logs_s3(flow_bucket, role, start, end, args.region):
+            if addr and addr not in ("-", "") and not is_infrastructure(addr):
+                observed[role].add(addr)
         print(f"      {role:9s} {len(observed[role]):4d} distinct source addresses")
 
     all_sources = set().union(*observed.values()) if observed else set()

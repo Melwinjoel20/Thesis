@@ -56,9 +56,9 @@ output "client_vpn_private_key_pem" {
   sensitive = true
 }
 
-output "flow_log_group_names" {
-  description = "Per-VPC Flow Log group names (network layer)."
-  value       = module.observability.flow_log_group_names
+output "flow_log_bucket" {
+  description = "S3 bucket holding VPC Flow Logs (network layer)."
+  value       = module.observability.flow_log_bucket
 }
 
 output "vpn_log_group_name" {
