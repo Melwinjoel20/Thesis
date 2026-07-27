@@ -78,14 +78,27 @@ def create_table(region, table_name):
     print(f"✔ Created DynamoDB table → {table_name}")
 
 
+def _stable_pid(table_name, name):
+    """Deterministic product_id from table + name, so re-seeding overwrites the
+    same item instead of creating a duplicate with a fresh random UUID."""
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"{table_name}:{name}"))
+
+
 def seed_table(region, table_name, products):
     dynamodb = boto3.resource("dynamodb", region_name=region)
     table = dynamodb.Table(table_name)
 
+    # Idempotency guard: if the table already holds items, seeding has run
+    # before. Skip it so repeated deploys don't append duplicate products.
+    existing = table.scan(Select="COUNT").get("Count", 0)
+    if existing > 0:
+        print(f"↷ Skipping {table_name}: already has {existing} item(s)")
+        return
+
     print(f"📝 Seeding table → {table_name}")
 
     for p in products:
-        pid = str(uuid.uuid4())
+        pid = _stable_pid(table_name, p["name"])
 
         table.put_item(
             Item={
