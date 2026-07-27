@@ -187,16 +187,22 @@ def main() -> int:
     print("\n[2/3] Resolving addresses to identities via VPN connection logs")
     identity_map: dict[str, str] = {}
     if vpn_group:
+        # AWS Client VPN connection logs are JSON with fields:
+        #   connection-log-type, common-name (certificate identity),
+        #   ingress-bytes, client-ip (private address assigned), etc.
         rows = cw_query(
             vpn_group,
-            "fields @message | filter @message like /connection-log/ or @message like /username/ "
-            "| parse @message '\"username\":\"*\"' as username "
+            "fields @message "
+            "| parse @message '\"common-name\":\"*\"' as commonName "
             "| parse @message '\"client-ip\":\"*\"' as clientIp "
-            "| filter ispresent(clientIp) | stats count() by clientIp, username",
+            "| parse @message '\"username\":\"*\"' as username "
+            "| filter ispresent(clientIp) "
+            "| stats count() by clientIp, commonName, username",
             start, end, args.region,
         )
         for r in rows:
-            ip, user = r.get("clientIp"), r.get("username")
+            ip = r.get("clientIp")
+            user = r.get("commonName") or r.get("username")
             if ip and user:
                 identity_map[ip] = user
         print(f"      {len(identity_map)} VPN-assigned addresses mapped to certificate identities")
