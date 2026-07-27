@@ -101,6 +101,31 @@ def in_client_cidr(addr: str, cidr: str) -> bool:
 
 
 
+
+def _client_vpn_endpoint_id(region: str):
+    try:
+        out = subprocess.check_output(
+            ["aws", "ec2", "describe-client-vpn-endpoints", "--region", region,
+             "--query", "ClientVpnEndpoints[0].ClientVpnEndpointId", "--output", "text"],
+            stderr=subprocess.PIPE).decode().strip()
+        return None if out in ("", "None") else out
+    except subprocess.CalledProcessError:
+        return None
+
+
+def _client_vpn_connections(endpoint_id: str, region: str):
+    """All sessions (active + recently terminated) with identity and assigned IP."""
+    try:
+        out = subprocess.check_output(
+            ["aws", "ec2", "describe-client-vpn-connections", "--region", region,
+             "--client-vpn-endpoint-id", endpoint_id, "--output", "json"],
+            stderr=subprocess.PIPE).decode()
+        return json.loads(out).get("Connections", [])
+    except subprocess.CalledProcessError as exc:
+        print(f"  ! describe-client-vpn-connections failed: {exc.stderr.decode().strip()}")
+        return []
+
+
 def read_flow_logs_s3(bucket: str, prefix: str, start: int, end: int, region: str):
     """Stream ACCEPT source/pkt-source addresses from S3-delivered flow logs.
 
@@ -186,28 +211,29 @@ def main() -> int:
     # ---------------- VPN translation layer ----------------
     print("\n[2/3] Resolving addresses to identities via VPN connection logs")
     identity_map: dict[str, str] = {}
-    if vpn_group:
-        # AWS Client VPN connection logs are JSON with fields:
-        #   connection-log-type, common-name (certificate identity),
-        #   ingress-bytes, client-ip (private address assigned), etc.
-        rows = cw_query(
-            vpn_group,
-            "fields @message "
-            "| parse @message '\"common-name\":\"*\"' as commonName "
-            "| parse @message '\"client-ip\":\"*\"' as clientIp "
-            "| parse @message '\"username\":\"*\"' as username "
-            "| filter ispresent(clientIp) "
-            "| stats count() by clientIp, commonName, username",
-            start, end, args.region,
-        )
-        for r in rows:
-            ip = r.get("clientIp")
-            user = r.get("commonName") or r.get("username")
-            if ip and user:
+    # The VPN translation record -- the user-to-private-address mapping that
+    # commodity VPNs fail to retain (Inukonda et al.) -- is obtained here from
+    # the Client VPN endpoint's own connection registry via
+    # describe-client-vpn-connections. This is the managed-cloud equivalent of
+    # the gateway translation log: for every session (active or terminated
+    # within the retention window) it exposes the assigned private address
+    # (ClientIp) alongside the authenticated certificate identity (Username /
+    # CommonName). It is used in preference to CloudWatch connection logs
+    # because, in the deployment environment, the managed CloudWatch delivery
+    # path for Client VPN did not emit events, whereas this API reliably
+    # returns the same identity-to-address binding.
+    endpoint_id = _client_vpn_endpoint_id(args.region)
+    if endpoint_id:
+        conns = _client_vpn_connections(endpoint_id, args.region)
+        for c in conns:
+            ip = c.get("ClientIp") or c.get("client-ip")
+            user = (c.get("Username") or c.get("CommonName")
+                    or c.get("common-name") or "").strip()
+            if ip and user and user.lower() not in ("", "n/a", "unknown"):
                 identity_map[ip] = user
         print(f"      {len(identity_map)} VPN-assigned addresses mapped to certificate identities")
     else:
-        print("      ! no VPN log group - Tu will reflect network records only")
+        print("      ! no Client VPN endpoint found - Tu will reflect network records only")
 
     vpn_sourced = {a for a in all_sources if in_client_cidr(a, args.client_cidr)}
     attributable = {a for a in all_sources if a in identity_map}
