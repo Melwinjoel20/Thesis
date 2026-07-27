@@ -19,6 +19,7 @@ variable "vpc_ids" {
 }
 
 variable "flow_log_role_arn" {
+  default     = ""
   type        = string
   description = "Role assumed by the VPC Flow Logs service to write to CloudWatch (Learner Lab: LabRole)."
 }
