@@ -148,6 +148,9 @@ jobs:
           BUCKET=$(terraform -chdir=terraform/usecase/storage output -raw bucket_name)
           aws s3 cp infra/EasyCartLogo.png "s3://${BUCKET}/images/EasyCartLogo.png"
           echo "Creating admin user(s)..."
+          ADMIN_EMAIL="${{ secrets.ADMIN_EMAIL }}" \
+          ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}" \
+          ADMIN_ROLE="SUPER_ADMIN" \
           python3 infra/EasyCartAdminUsers.py
           echo "Seeding complete."
 

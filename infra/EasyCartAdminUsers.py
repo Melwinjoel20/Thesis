@@ -96,19 +96,36 @@ def main():
     config[ADMIN_TABLE_KEY] = table_name
     save_config(config)
 
-    # 2) Seed one admin user (interactive)
+    # 2) Seed one admin user. Non-interactive when ADMIN_EMAIL / ADMIN_PASSWORD
+    # are set in the environment (so this runs unattended in CI); falls back to
+    # prompts for local use. If neither is provided and stdin is not a TTY
+    # (e.g. a pipeline), skip user creation cleanly rather than erroring.
+    import sys
     print("\n[2] Create initial admin user")
-    email = input("Admin email: ").strip()
-    if not email:
-        print(" Email is required. Exiting.")
-        return
 
-    password = input("Admin password: ").strip()
-    if not password:
-        print(" Password is required. Exiting.")
-        return
+    env_email = os.environ.get("ADMIN_EMAIL", "").strip()
+    env_password = os.environ.get("ADMIN_PASSWORD", "").strip()
+    env_role = os.environ.get("ADMIN_ROLE", "SUPER_ADMIN").strip().upper()
 
-    role = input("Role (ADMIN/SUPER_ADMIN) [SUPER_ADMIN]: ").strip().upper() or "SUPER_ADMIN"
+    if env_email and env_password:
+        email, password, role = env_email, env_password, env_role
+        print(f"  Using ADMIN_EMAIL from environment: {email}")
+    elif not sys.stdin.isatty():
+        print("  No ADMIN_EMAIL/ADMIN_PASSWORD set and no interactive terminal;")
+        print("  skipping admin user creation. Set those env vars to seed one in CI.")
+        print("\n Admin users table ready (no initial user created).")
+        return
+    else:
+        email = input("Admin email: ").strip()
+        if not email:
+            print(" Email is required. Exiting.")
+            return
+        password = input("Admin password: ").strip()
+        if not password:
+            print(" Password is required. Exiting.")
+            return
+        role = input("Role (ADMIN/SUPER_ADMIN) [SUPER_ADMIN]: ").strip().upper() or "SUPER_ADMIN"
+
     if role not in ("ADMIN", "SUPER_ADMIN"):
         print("Invalid role, defaulting to ADMIN")
         role = "ADMIN"
