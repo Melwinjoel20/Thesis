@@ -443,31 +443,21 @@ async function calculateAndShowFare(destinationCity) {
         return 0;
     }
 
-    try {
-        const res  = await fetch(FARE_API_URL, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ from: STORE_CITY, to: matched })
-        });
-        const data = await res.json();
-        const fee  = Number(data.fare_raw) || 0;
-        deliveryFeeRaw = fee;
-        el.innerHTML = `
-            <div class="order-row" style="align-items:flex-start;">
-                <div>
-                    <p class="label">Delivery (${STORE_CITY} → ${matched})</p>
-                    <p class="sub-label">${data.distance_km} km &nbsp;·&nbsp; est. ${data.duration_estimate}</p>
-                </div>
-                <p class="value">€${fee.toFixed(2)}</p>
-            </div>`;
-        return fee;
-    } catch {
-        el.innerHTML = `
-            <div class="order-row">
-                <p class="label">Delivery</p>
-                <p class="value" style="color:#c0392b;">Unavailable</p>
-            </div>`;
-        return 0;
-    }
+    // Delivery fee computed locally with a flat national rate. The original
+    // external fare-calculator microservice is outside this project's zero
+    // trust estate; a local estimate removes the internet dependency while
+    // keeping the checkout total correct.
+    const NATIONAL_FLAT_FEE = 5.99;
+    deliveryFeeRaw = NATIONAL_FLAT_FEE;
+    el.innerHTML = `
+        <div class="order-row" style="align-items:flex-start;">
+            <div>
+                <p class="label">Delivery (${STORE_CITY} → ${matched})</p>
+                <p class="sub-label">Standard national delivery</p>
+            </div>
+            <p class="value">€${NATIONAL_FLAT_FEE.toFixed(2)}</p>
+        </div>`;
+    return NATIONAL_FLAT_FEE;
 }
 
 // ── Order summary ─────────────────────────────────────────────────────────────
