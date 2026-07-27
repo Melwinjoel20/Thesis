@@ -134,6 +134,23 @@ jobs:
         if: env.DO_APPLY == 'true'
         run: python3 scripts/generate_config.py
 
+      # Seed the data tier once the tables and bucket exist. These scripts talk
+      # to DynamoDB and S3 over the public AWS API (not the private app path),
+      # so they run fine from the runner. Idempotent: image/product writes
+      # overwrite, so re-running a deploy simply refreshes the catalogue.
+      - name: Seed DynamoDB tables, product images and admin user
+        if: env.DO_APPLY == 'true'
+        run: |
+          python3 -m pip install --quiet boto3 passlib
+          echo "Seeding products and images..."
+          python3 infra/setup_products.py
+          echo "Uploading logo..."
+          BUCKET=$(terraform -chdir=terraform/usecase/storage output -raw bucket_name)
+          aws s3 cp infra/EasyCartLogo.png "s3://${BUCKET}/images/EasyCartLogo.png"
+          echo "Creating admin user(s)..."
+          python3 infra/EasyCartAdminUsers.py
+          echo "Seeding complete."
+
       - name: Vendor Python wheels (instance has no internet — pip must install offline)
         if: env.DO_APPLY == 'true'
         run: |
