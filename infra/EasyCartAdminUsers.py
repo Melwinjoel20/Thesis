@@ -69,11 +69,12 @@ def create_admin_user(region, table_name, email, password, role="SUPER_ADMIN"):
     password_hash = pbkdf2_sha256.hash(password)
 
     item = {
+        "user_id": email,  # table hash key; email doubles as the identifier
         "email": email,
         "password_hash": password_hash,
         "role": role,  # "ADMIN" or "SUPER_ADMIN"
         "is_active": True,
-        "created_at": datetime.datetime.utcnow().isoformat(),
+        "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
 
     table.put_item(Item=item)
