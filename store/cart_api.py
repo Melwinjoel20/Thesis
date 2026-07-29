@@ -42,7 +42,11 @@ _log_stream_ready = False
 def _logs():
     global _logs_client
     if _logs_client is None:
-        _logs_client = boto3.client("logs", region_name=settings.COGNITO["region"])
+        from botocore.config import Config
+        cfg = Config(connect_timeout=1, read_timeout=1, retries={"max_attempts": 0})
+        _logs_client = boto3.client(
+            "logs", region_name=settings.COGNITO["region"], config=cfg
+        )
     return _logs_client
 
 
@@ -70,19 +74,23 @@ def _log_call(operation, user_id, status, correlation_id):
         "authenticated": bool(user_id),
     })
     logger.info(record)
-    try:
-        _ensure_stream()
-        _logs().put_log_events(
-            logGroupName=_APP_LOG_GROUP,
-            logStreamName=_APP_LOG_STREAM,
-            logEvents=[{
-                "timestamp": int(__import__("time").time() * 1000),
-                "message": record,
-            }],
-        )
-    except Exception:
-        # Logging must never break a cart request.
-        pass
+
+    def _write():
+        try:
+            _ensure_stream()
+            _logs().put_log_events(
+                logGroupName=_APP_LOG_GROUP,
+                logStreamName=_APP_LOG_STREAM,
+                logEvents=[{
+                    "timestamp": int(__import__("time").time() * 1000),
+                    "message": record,
+                }],
+            )
+        except Exception:
+            pass
+
+    import threading
+    threading.Thread(target=_write, daemon=True).start()
 
 
 

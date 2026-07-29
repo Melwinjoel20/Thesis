@@ -131,6 +131,7 @@ resource "aws_vpc_endpoint" "eb_interface" {
     "sqs",
     "cognito-idp", # Django login/register/OTP via cognito-idp SDK
     "lambda",      # Django invokes the cart Lambdas server-side via boto3
+    "logs",        # Django writes service-call records for traceability
   ])
 
   vpc_id              = local.frontend_vpc_id
