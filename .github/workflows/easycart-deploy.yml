@@ -152,6 +152,21 @@ jobs:
           ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}" \
           ADMIN_ROLE="SUPER_ADMIN" \
           python3 infra/EasyCartAdminUsers.py
+
+          # Make the admin a Cognito user and add to the EasyCartAdmins group,
+          # which is what the app checks for dashboard access. Create + confirm
+          # the user, then add to the group. Ignore errors if it already exists.
+          POOL=$(python3 -c "import json;print(json.load(open('infra/config.json'))['user_pool_id'])")
+          if [ -n "${{ secrets.ADMIN_EMAIL }}" ] && [ -n "$POOL" ]; then
+            aws cognito-idp admin-create-user --region us-east-1 --user-pool-id "$POOL" \
+              --username "${{ secrets.ADMIN_EMAIL }}" --message-action SUPPRESS \
+              --user-attributes Name=email,Value="${{ secrets.ADMIN_EMAIL }}" Name=email_verified,Value=true || true
+            aws cognito-idp admin-set-user-password --region us-east-1 --user-pool-id "$POOL" \
+              --username "${{ secrets.ADMIN_EMAIL }}" --password "${{ secrets.ADMIN_PASSWORD }}" --permanent || true
+            aws cognito-idp admin-add-user-to-group --region us-east-1 --user-pool-id "$POOL" \
+              --username "${{ secrets.ADMIN_EMAIL }}" --group-name EasyCartAdmins || true
+            echo "Admin cognito user ensured and added to EasyCartAdmins."
+          fi
           echo "Seeding complete."
 
       - name: Vendor Python wheels (instance has no internet — pip must install offline)
