@@ -1,28 +1,30 @@
 {
-  "window_hours": 1,
-  "generated": "2026-07-29T10:39:26.221633+00:00",
+  "window_hours": 2,
+  "generated": "2026-07-29T11:14:56.855702+00:00",
   "network": {
-    "IT": 57,
+    "IT": 85,
     "Iu": 0,
     "Tu_spoke": 0.0,
     "Tu_gateway": 100.0,
-    "vpn_sessions_resolved": 4,
+    "vpn_sessions_resolved": 3,
     "client_cidr_in_flowlogs": 0,
     "per_vpc": {
-      "hub": 4,
-      "frontend": 50,
+      "hub": 6,
+      "frontend": 76,
       "app": 7,
       "database": 0
     }
   },
   "service": {
     "RT": 7,
-    "Ra": 0,
-    "Ts": 0.0,
-    "distinct_principals": 0
+    "Ra": 7,
+    "Ts": 100.0,
+    "distinct_principals": 1
   },
   "unattributed_sample": [
+    "10.0.1.100",
     "10.0.1.176",
+    "10.0.1.253",
     "10.0.1.42",
     "10.0.2.7",
     "10.1.1.102",
@@ -34,8 +36,6 @@
     "10.1.1.189",
     "10.1.1.224",
     "10.1.1.38",
-    "10.1.1.8",
-    "10.1.1.83",
-    "10.1.1.92"
+    "10.1.1.8"
   ]
 }

@@ -102,6 +102,29 @@ def in_client_cidr(addr: str, cidr: str) -> bool:
 
 
 
+
+def _filter_log_messages(group, start, end, region):
+    """Return raw log message strings from a CloudWatch group over a window."""
+    messages = []
+    token = None
+    while True:
+        cmd = ["aws", "logs", "filter-log-events", "--region", region,
+               "--log-group-name", group,
+               "--start-time", str(start * 1000), "--end-time", str(end * 1000),
+               "--limit", "10000", "--output", "json"]
+        if token:
+            cmd += ["--next-token", token]
+        try:
+            out = json.loads(subprocess.check_output(cmd, stderr=subprocess.PIPE).decode())
+        except subprocess.CalledProcessError:
+            break
+        messages.extend(e.get("message", "") for e in out.get("events", []))
+        token = out.get("nextToken")
+        if not token:
+            break
+    return messages
+
+
 def _client_vpn_endpoint_id(region: str):
     try:
         out = subprocess.check_output(
@@ -282,22 +305,19 @@ def main() -> int:
     # access log would carry.
     app_group = tf_output(TF_NET, "app_correlation_log_group_name")
     if app_group:
-        rows = cw_query(
-            app_group,
-            "fields @message "
-            "| parse @message '\"userId\":\"*\"' as userId "
-            "| parse @message '\"authenticated\":*' as auth "
-            "| stats count() as n by userId, auth",
-            start, end, args.region,
-        )
-        for r in rows:
-            n = int(r.get("n", 0))
-            RT += n
-            uid = r.get("userId", "")
-            auth = str(r.get("auth", "")).strip().lower()
-            if auth == "true" and uid and uid != "anonymous":
-                Ra += n
-                principals.add(uid)
+        # Pull the raw records and parse the JSON in Python -- more reliable
+        # than a Logs Insights parse pattern against a boolean field.
+        for msg in _filter_log_messages(app_group, start, end, args.region):
+            try:
+                rec = json.loads(msg)
+            except (TypeError, ValueError):
+                continue
+            RT += 1
+            if rec.get("authenticated") is True:
+                uid = rec.get("userId")
+                if uid and uid != "anonymous":
+                    Ra += 1
+                    principals.add(uid)
         print(f"      {RT} service calls, {Ra} carrying an authenticated identity, "
               f"{len(principals)} distinct principals")
     else:
