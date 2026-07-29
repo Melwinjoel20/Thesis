@@ -271,26 +271,37 @@ def main() -> int:
     Tu = Tu_gateway
 
     # ---------------- service layer ----------------
-    print("\n[3/3] Measuring service-layer attribution from API access logs")
+    print("\n[3/3] Measuring service-layer attribution from application logs")
     RT = Ra = 0
     principals: set[str] = set()
-    if api_group:
+    # API Gateway access logging is unavailable in the lab environment (the
+    # account-level CloudWatch role cannot be set), so service-layer
+    # attribution is measured at the Django proxy instead. The proxy fronts
+    # every cart Lambda and records, per call, the authenticated session user,
+    # the operation and the outcome -- the same information an API Gateway
+    # access log would carry.
+    app_group = tf_output(TF_NET, "app_correlation_log_group_name")
+    if app_group:
         rows = cw_query(
-            api_group,
-            "fields @message | stats count() as n by "
-            "coalesce(subject, 'ANONYMOUS') as principal",
+            app_group,
+            "fields @message "
+            "| parse @message '\"userId\":\"*\"' as userId "
+            "| parse @message '\"authenticated\":*' as auth "
+            "| stats count() as n by userId, auth",
             start, end, args.region,
         )
         for r in rows:
             n = int(r.get("n", 0))
             RT += n
-            if r.get("principal") and r["principal"] != "ANONYMOUS":
+            uid = r.get("userId", "")
+            auth = str(r.get("auth", "")).strip().lower()
+            if auth == "true" and uid and uid != "anonymous":
                 Ra += n
-                principals.add(r["principal"])
-        print(f"      {RT} requests, {Ra} carrying a verified token subject, "
+                principals.add(uid)
+        print(f"      {RT} service calls, {Ra} carrying an authenticated identity, "
               f"{len(principals)} distinct principals")
     else:
-        print("      ! no API access log group found")
+        print("      ! no application correlation log group found")
 
     Ts = (Ra / RT * 100) if RT else 0.0
 

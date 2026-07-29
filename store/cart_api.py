@@ -20,6 +20,8 @@ for this project.
 """
 
 import json
+import logging
+import uuid
 
 import boto3
 from django.conf import settings
@@ -28,6 +30,61 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 _lambda_client = None
+
+logger = logging.getLogger("easycart.cart")
+
+_logs_client = None
+_APP_LOG_GROUP = "/easycart/dev/app/correlation"
+_APP_LOG_STREAM = "cart-service"
+_log_stream_ready = False
+
+
+def _logs():
+    global _logs_client
+    if _logs_client is None:
+        _logs_client = boto3.client("logs", region_name=settings.COGNITO["region"])
+    return _logs_client
+
+
+def _ensure_stream():
+    global _log_stream_ready
+    if _log_stream_ready:
+        return
+    try:
+        _logs().create_log_stream(
+            logGroupName=_APP_LOG_GROUP, logStreamName=_APP_LOG_STREAM
+        )
+    except _logs().exceptions.ResourceAlreadyExistsException:
+        pass
+    except Exception:
+        pass
+    _log_stream_ready = True
+
+
+def _log_call(operation, user_id, status, correlation_id):
+    record = json.dumps({
+        "correlationId": correlation_id,
+        "operation": operation,
+        "userId": user_id or "anonymous",
+        "status": status,
+        "authenticated": bool(user_id),
+    })
+    logger.info(record)
+    try:
+        _ensure_stream()
+        _logs().put_log_events(
+            logGroupName=_APP_LOG_GROUP,
+            logStreamName=_APP_LOG_STREAM,
+            logEvents=[{
+                "timestamp": int(__import__("time").time() * 1000),
+                "message": record,
+            }],
+        )
+    except Exception:
+        # Logging must never break a cart request.
+        pass
+
+
 
 
 def _client():
@@ -91,42 +148,58 @@ def _relay(status, data):
 @csrf_exempt
 @require_POST
 def add_to_cart(request):
+    cid = str(uuid.uuid4())
     user_id = _session_user(request)
     if not user_id:
+        _log_call("add-to-cart", None, 401, cid)
         return JsonResponse({"error": "Unauthorized: Please log in"}, status=401)
     body = _json_body(request)
     body["user_id"] = user_id  # identity from session, never the client
-    return _relay(*_invoke("add-to-cart", body=body))
+    status, data = _invoke("add-to-cart", body=body)
+    _log_call("add-to-cart", user_id, status, cid)
+    return _relay(status, data)
 
 
 @require_GET
 def view_cart(request):
+    cid = str(uuid.uuid4())
     user_id = _session_user(request)
     if not user_id:
+        _log_call("view-cart", None, 401, cid)
         return JsonResponse({"error": "Unauthorized: Please log in"}, status=401)
-    return _relay(*_invoke("view-cart", method="GET", query={"user_id": user_id}))
+    status, data = _invoke("view-cart", method="GET", query={"user_id": user_id})
+    _log_call("view-cart", user_id, status, cid)
+    return _relay(status, data)
 
 
 @csrf_exempt
 @require_POST
 def remove_cart_item(request):
+    cid = str(uuid.uuid4())
     user_id = _session_user(request)
     if not user_id:
+        _log_call("remove-cart-item", None, 401, cid)
         return JsonResponse({"error": "Unauthorized: Please log in"}, status=401)
     body = _json_body(request)
     body["user_id"] = user_id
-    return _relay(*_invoke("remove-cart-item", body=body))
+    status, data = _invoke("remove-cart-item", body=body)
+    _log_call("remove-cart-item", user_id, status, cid)
+    return _relay(status, data)
 
 
 @csrf_exempt
 @require_POST
 def place_order(request):
+    cid = str(uuid.uuid4())
     user_id = _session_user(request)
     if not user_id:
+        _log_call("place-order", None, 401, cid)
         return JsonResponse({"error": "Unauthorized: Please log in"}, status=401)
     body = _json_body(request)
     body["user_id"] = user_id
-    return _relay(*_invoke("place-order", body=body))
+    status, data = _invoke("place-order", body=body)
+    _log_call("place-order", user_id, status, cid)
+    return _relay(status, data)
 
 
 @csrf_exempt
