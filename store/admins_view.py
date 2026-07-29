@@ -14,8 +14,6 @@ import json
 # =========================
 REGION     = settings.S3_REGION
 BUCKET     = settings.S3_BUCKET
-GLUE_JOB   = "weekly-sales-analytics"
-OUTPUT_KEY = "analytics/weekly_sales_output.json"
 
 
 # =========================
@@ -180,80 +178,3 @@ def admin_delete_product(request, category, product_id):
         messages.error(request, "Failed to delete item from database.")
 
     return redirect("admin_manage_products")
-
-
-# =========================
-# GLUE: READ OUTPUT FROM S3
-# =========================
-def read_glue_output():
-    try:
-        s3   = boto3.client("s3", region_name=REGION)
-        obj  = s3.get_object(Bucket=BUCKET, Key=OUTPUT_KEY)
-        data = json.loads(obj["Body"].read().decode("utf-8"))
-        print("Analytics output loaded from S3")
-        return data
-    except Exception as e:
-        print(f"Failed to read Glue output from S3: {e}")
-        return None
-
-
-# =========================
-# TRIGGER ENDPOINT
-# =========================
-@admin_required
-def trigger_sales_report(request):
-    try:
-        glue = boto3.client("glue", region_name=REGION)
-        runs = glue.get_job_runs(JobName=GLUE_JOB, MaxResults=1)
-        if runs["JobRuns"] and runs["JobRuns"][0]["JobRunState"] in ("RUNNING", "STARTING"):
-            pass  # already running, don't start another
-        else:
-            glue.start_job_run(JobName=GLUE_JOB)
-        return JsonResponse({"status": "triggered"})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)})
-
-
-# =========================
-# POLL ENDPOINT
-# =========================
-@admin_required
-def check_report_status(request):
-    try:
-        glue = boto3.client("glue", region_name=REGION)
-        runs = glue.get_job_runs(JobName=GLUE_JOB, MaxResults=1)
-
-        if not runs["JobRuns"]:
-            return JsonResponse({"status": "no_runs"})
-
-        state = runs["JobRuns"][0]["JobRunState"]
-
-        if state == "SUCCEEDED":
-            analytics = read_glue_output()
-            if not analytics:
-                return JsonResponse({"status": "error", "message": "No data in S3"})
-            return JsonResponse({"status": "ready", "data": analytics})
-
-        if state in ("FAILED", "ERROR", "TIMEOUT", "STOPPED"):
-            return JsonResponse({"status": "failed"})
-
-        return JsonResponse({"status": "running"})
-
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)})
-
-
-# =========================
-# WEEKLY SALES DASHBOARD
-# =========================
-@admin_required
-def admin_sales_dashboard(request):
-    return render(request, "admin/admin_sales_dashboard.html", {
-        "total_orders": 0,
-        "total_revenue": 0,
-        "total_items_sold": 0,
-        "top_category": "N/A",
-        "daily_sales": [],
-        "category_sales": [],
-        "top_products": [],
-    })

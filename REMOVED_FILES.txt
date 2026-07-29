@@ -1,0 +1,4 @@
+These files were deleted (delete them from your repo too):
+  store/templates/admin/admin_sales_dashboard.html
+  infra/create_sales_analytics_table.py
+  spark_jobs/            (entire folder: setup_glue.py, weekly_sales_analytics.py, weekly_sales_glue.py)
