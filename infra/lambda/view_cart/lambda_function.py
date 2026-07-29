@@ -46,7 +46,7 @@ def lambda_handler(event, context):
             "body": ""
         }
 
-    # ✅ Read user_id from query params safely
+    # Read user_id from query params safely
     query_params = event.get("queryStringParameters") or {}
     user_id = query_params.get("user_id")
 

@@ -27,7 +27,7 @@ def create_cart_table(region):
 
     try:
         dynamodb.describe_table(TableName=table_name)
-        print("✔ DynamoDB table already exists:", table_name)
+        print("DynamoDB table already exists:", table_name)
         return table_name
     except ClientError:
         pass
@@ -90,7 +90,7 @@ def create_orders_table(region):
 def create_sns_topic(region):
     sns = boto3.client("sns", region_name=region)
     resp = sns.create_topic(Name="EasyCartOrderNotifications")
-    print("✔ SNS Topic:", resp["TopicArn"])
+    print("SNS Topic:", resp["TopicArn"])
     return resp["TopicArn"]
 
 
@@ -240,7 +240,7 @@ def enable_function_url(fn_name, region):
         else:
             raise e
 
-    print(f" Function URL Enabled → {url}")
+    print(f" Function URL Enabled -> {url}")
     return url
 
 
@@ -290,7 +290,7 @@ def main():
 
     save_config(cfg)
 
-    print("\n🎉 CART SERVICE READY (tables + lambdas + SNS)!\n")
+    print("\nCART SERVICE READY (tables + lambdas + SNS)!\n")
 
 
 if __name__ == "__main__":

@@ -34,20 +34,20 @@ def parse_product(file_name):
     parts = name.split("_")
 
     if len(parts) < 3:
-        print(f"⚠ Skipping invalid filename: {file_name}")
+        print(f" Skipping invalid filename: {file_name}")
         return None
 
     category_key = parts[0].lower()
     price = parts[-1]
 
     if category_key not in CATEGORY_MAP:
-        print(f"⚠ Unknown category: {file_name}")
+        print(f" Unknown category: {file_name}")
         return None
 
     try:
         price = int(price)
     except:
-        print(f"⚠ Invalid price in: {file_name}")
+        print(f" Invalid price in: {file_name}")
         return None
 
     product_words = parts[1:-1]
@@ -95,7 +95,7 @@ def upload_product_images(bucket, region, folder):
                     s3_key,
                     ExtraArgs={"ContentType": content_type}
                 )
-                print(f"✔ Uploaded: {file_name}")
+                print(f"Uploaded: {file_name}")
             else:
                 raise e
 
@@ -112,9 +112,9 @@ def create_table_if_needed(region, table_name):
 
     try:
         dynamodb.describe_table(TableName=table_name)
-        print(f"✔ Table exists: {table_name}")
+        print(f"Table exists: {table_name}")
     except ClientError:
-        print(f"🛠 Creating table: {table_name}")
+        print(f" Creating table: {table_name}")
         dynamodb.create_table(
             TableName=table_name,
             AttributeDefinitions=[
@@ -128,7 +128,7 @@ def create_table_if_needed(region, table_name):
 
         waiter = dynamodb.get_waiter("table_exists")
         waiter.wait(TableName=table_name)
-        print(f"✔ Created table: {table_name}")
+        print(f"Created table: {table_name}")
 
 
 def insert_product(region, table_name, product, image_key):
@@ -145,7 +145,7 @@ def insert_product(region, table_name, product, image_key):
         }
     )
 
-    print(f"✔ Inserted: {product['name']} → {table_name}")
+    print(f"Inserted: {product['name']} -> {table_name}")
 
 
 # =========================
@@ -158,7 +158,7 @@ def main():
     bucket = config["bucket_name"]
     folder = config["product_images_folder"]
 
-    print("\n🚀 AUTO PRODUCT INGESTION STARTED\n")
+    print("\nAUTO PRODUCT INGESTION STARTED\n")
 
     uploaded = upload_product_images(bucket, region, folder)
 
@@ -177,7 +177,7 @@ def main():
             uploaded[file_name]
         )
 
-    print("\n🎉 AUTO IMPORT COMPLETE!\n")
+    print("\nAUTO IMPORT COMPLETE!\n")
 
 
 if __name__ == "__main__":

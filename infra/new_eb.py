@@ -65,7 +65,7 @@ def get_latest_platform(eb):
     ready.sort(key=lambda p: p["PlatformArn"], reverse=True)
 
     latest = ready[0]
-    print(f"✔ Using platform: {latest['PlatformArn']}")
+    print(f"Using platform: {latest['PlatformArn']}")
     return latest["PlatformArn"]
 
 
@@ -89,7 +89,7 @@ def ensure_environment(eb, config):
     # If environment exists
     if envs:
         env = envs[0]
-        print(f"✔ Environment exists: {env_name}")
+        print(f"Environment exists: {env_name}")
         print(f"   URL: http://{env.get('CNAME')}")
         config["eb_environment_url"] = f"http://{env.get('CNAME')}"
         save_config(config)

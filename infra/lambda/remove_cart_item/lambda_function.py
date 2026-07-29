@@ -40,7 +40,7 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Missing user_id or item_id"})
         }
 
-    # ✅ DIRECT DELETE (no scan needed)
+    # DIRECT DELETE (no scan needed)
     table.delete_item(
         Key={
             "user_id": user_id,

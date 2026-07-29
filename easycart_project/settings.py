@@ -33,8 +33,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://041835b73e534e10a7c5e7d362be8654.vfs.cloud9.us-east-1.amazonaws.com",
     "http://easycart-env-cli.eba-3amcndey.us-east-1.elasticbeanstalk.com",
     "https://easycart-env-cli.eba-3amcndey.us-east-1.elasticbeanstalk.com",
-    "http://localhost:8000",   # ← add this
-    "http://127.0.0.1:8000",   # ← add this
+    "http://localhost:8000",   #  add this
+    "http://127.0.0.1:8000",   #  add this
     "http://localhost:8080",
     "http://127.0.0.1:8080",
 
@@ -156,7 +156,7 @@ COGNITO = {
     "user_pool_id": infra_config.get("user_pool_id"),
     "app_client_id": infra_config.get("app_client_id"),
     "domain_url": infra_config.get("domain_url"),
-    # ⭐ add lambda cart endpoints here
+    #  add lambda cart endpoints here
     "lambda_cart_endpoints": infra_config.get("lambda_cart_endpoints", {}),
     "rate_limit": infra_config.get("rate_limit", {}),
     "Rate_limit_table": infra_config.get("RATE_LIMIT_TABLE", {}),

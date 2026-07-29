@@ -471,7 +471,7 @@ def products(request, category=None):
             response = table.scan()
             items = response.get("Items", [])
 
-            # ✅ attach category to every item
+            # attach category to every item
             for item in items:
                 item["category"] = category
 
@@ -481,7 +481,7 @@ def products(request, category=None):
                 response = table.scan()
                 cat_items = response.get("Items", [])
 
-                # ✅ attach category to every item
+                # attach category to every item
                 for item in cat_items:
                     item["category"] = cat
 

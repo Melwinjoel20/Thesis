@@ -28,10 +28,10 @@ def create_table():
     dynamodb = boto3.client("dynamodb", region_name=REGION)
 
     if table_exists(dynamodb, TABLE_NAME):
-        print(f"✔ Table already exists: {TABLE_NAME}")
+        print(f"Table already exists: {TABLE_NAME}")
         return
 
-    print(f"🛠 Creating table: {TABLE_NAME}")
+    print(f" Creating table: {TABLE_NAME}")
 
     dynamodb.create_table(
         TableName=TABLE_NAME,
@@ -53,7 +53,7 @@ def create_table():
     waiter = dynamodb.get_waiter("table_exists")
     waiter.wait(TableName=TABLE_NAME)
 
-    print(f"✔ Table created successfully: {TABLE_NAME}")
+    print(f"Table created successfully: {TABLE_NAME}")
 
 
 # =========================

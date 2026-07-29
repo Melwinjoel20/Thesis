@@ -18,7 +18,7 @@ def create_bucket():
                 Bucket=BUCKET_NAME,
                 CreateBucketConfiguration={"LocationConstraint": REGION}
             )
-        print(f"✔ Bucket created: {BUCKET_NAME}")
+        print(f"Bucket created: {BUCKET_NAME}")
 
     except ClientError as e:
         if "BucketAlreadyOwnedByYou" in str(e):
@@ -43,10 +43,10 @@ def create_bucket():
             Bucket=BUCKET_NAME,
             Policy=json.dumps(policy)
         )
-        print("✔ Public-read bucket policy applied")
+        print("Public-read bucket policy applied")
 
     except Exception as e:
-        print(f"⚠ Could not set bucket policy: {e}")
+        print(f" Could not set bucket policy: {e}")
 
 
 def logo_exists():
@@ -72,7 +72,7 @@ def upload_logo():
             object_key,
             ExtraArgs={"ContentType": "image/png"}
         )
-        print("✔ Logo uploaded successfully!")
+        print("Logo uploaded successfully!")
 
     return f"https://{BUCKET_NAME}.s3.{REGION}.amazonaws.com/{object_key}"
 

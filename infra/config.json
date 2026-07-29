@@ -1,7 +1,7 @@
 {
     "region": "us-east-1",
-    "user_pool_id": "us-east-1_ttHrux0sI",
-    "app_client_id": "1b8tnp84ds67lavpmiktfb63og",
+    "user_pool_id": "us-east-1_HwC8CnTMD",
+    "app_client_id": "54qa9b4jolo2e3tpqrpmi02nn2",
     "domain_url": "",
     "s3_logo_url": "https://easycart-private-dev-ue1-001.s3.us-east-1.amazonaws.com/images/EasyCartLogo.png",
     "dev_mode": false,
@@ -31,7 +31,7 @@
         }
     },
     "RATE_LIMIT_TABLE": "RateLimits",
-    "app_client_secret": "sak73bmmtl42l4uprvfpo9pe0lokq00ffreeqrsqd1srrquv47t",
+    "app_client_secret": "d207s00gknh8o1ip7e4c1qd8763v34attou1ae80cjm6ntq9nov",
     "admin_users_table": "EasyCartAdminUsers",
     "eb_application_name": "fe-ebs-app-easycart-dev-ue1-001",
     "eb_environment_name": "fe-ebs-env-easycart-dev-ue1-001",
@@ -45,5 +45,5 @@
         "tax-calculator": "app-fn-tax-calculator-easycart-dev-ue1-001",
         "view-cart": "app-fn-view-cart-easycart-dev-ue1-001"
     },
-    "internal_api_base_url": "https://xo705r0wa3-vpce-0dcc08e06d8bae8bb.execute-api.us-east-1.amazonaws.com/internal"
+    "internal_api_base_url": "https://mt699zqg25-vpce-069ec2c46112618ab.execute-api.us-east-1.amazonaws.com/internal"
 }

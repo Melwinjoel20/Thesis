@@ -150,7 +150,7 @@ def create_domain_if_needed(config, user_pool_id):
     if "domain_url" in config:
         prefix = config["domain_url"].split("//")[1].split(".")[0]
         if domain_exists(prefix):
-            print(f"✔ Domain exists: {config['domain_url']}")
+            print(f"Domain exists: {config['domain_url']}")
             return config["domain_url"]
 
     print("\n[3] Creating Cognito Domain...")

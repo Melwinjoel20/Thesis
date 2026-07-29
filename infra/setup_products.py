@@ -16,7 +16,7 @@ def load_config():
 def save_config(data):
     with open(CONFIG_PATH, "w") as f:
         json.dump(data, f, indent=4)
-    print("✔ config.json updated")
+    print("config.json updated")
 
 
 # S3 FUNCTIONS — Upload product images
@@ -41,7 +41,7 @@ def upload_product_images(bucket, region, folder):
 
         # store ONLY the S3 key, not a URL
         uploaded[file_name] = s3_key
-        print(f"✔ Uploaded {file_name} → key = {s3_key}")
+        print(f"Uploaded {file_name} -> key = {s3_key}")
 
     return uploaded
 
@@ -60,10 +60,10 @@ def create_table(region, table_name):
     client = boto3.client("dynamodb", region_name=region)
 
     if table_exists(client, table_name):
-        print(f"✔ Table exists: {table_name}")
+        print(f"Table exists: {table_name}")
         return
 
-    print(f"🛠 Creating table → {table_name}")
+    print(f"Creating table -> {table_name}")
 
     client.create_table(
         TableName=table_name,
@@ -75,7 +75,7 @@ def create_table(region, table_name):
     waiter = client.get_waiter("table_exists")
     waiter.wait(TableName=table_name)
 
-    print(f"✔ Created DynamoDB table → {table_name}")
+    print(f"Created DynamoDB table -> {table_name}")
 
 
 def _stable_pid(table_name, name):
@@ -92,10 +92,10 @@ def seed_table(region, table_name, products):
     # before. Skip it so repeated deploys don't append duplicate products.
     existing = table.scan(Select="COUNT").get("Count", 0)
     if existing > 0:
-        print(f"↷ Skipping {table_name}: already has {existing} item(s)")
+        print(f"Skipping {table_name}: already has {existing} item(s)")
         return
 
-    print(f"📝 Seeding table → {table_name}")
+    print(f"Seeding table -> {table_name}")
 
     for p in products:
         pid = _stable_pid(table_name, p["name"])
@@ -110,7 +110,7 @@ def seed_table(region, table_name, products):
             }
         )
 
-        print(f"✔ Added: {p['name']} → {pid}")
+        print(f"Added: {p['name']} -> {pid}")
 
 
 def update_images(region, table_name, mapping):
@@ -129,7 +129,7 @@ def update_images(region, table_name, mapping):
                     UpdateExpression="SET image = :u",
                     ExpressionAttributeValues={":u": key}  # now S3 key
                 )
-                print(f"✔ Updated image key → {item['name']}")
+                print(f"Updated image key -> {item['name']}")
                 break
 
 
@@ -142,7 +142,7 @@ def main():
     tables = config["dynamodb_tables"]
     images_folder = config["product_images_folder"]
 
-    print("\n🚀 Starting EasyCart PRODUCT SETUP\n")
+    print("\nStarting EasyCart PRODUCT SETUP\n")
 
     #  Upload product images
     uploaded_mapping = upload_product_images(bucket, region, images_folder)
@@ -171,7 +171,7 @@ def main():
         seed_table(region, table, SAMPLE_DATA[table])
         update_images(region, table, uploaded_mapping)
 
-    print("\n🎉 ALL DONE — Products + Images + Tables set up correctly!\n")
+    print("\nALL DONE — Products + Images + Tables set up correctly!\n")
 
 
 if __name__ == "__main__":

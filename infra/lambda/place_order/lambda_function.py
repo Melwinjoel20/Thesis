@@ -114,7 +114,7 @@ def lambda_handler(event, context):
             "price": float(item.get("price", 0)),
             "qty": int(item.get("qty", 1)),
             "image": item.get("image", ""),
-            "category": item.get("category", "General"),   # ✅ IMPORTANT
+            "category": item.get("category", "General"),   # IMPORTANT
             "user_id": item.get("user_id")
         })
 
