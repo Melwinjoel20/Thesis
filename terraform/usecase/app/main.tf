@@ -148,6 +148,14 @@ resource "aws_vpc_endpoint" "sns" {
 # -----------------------------------------------------------------------------
 # Cognito — OAuth 2.0 identity
 # -----------------------------------------------------------------------------
+data "aws_caller_identity" "current" {}
+
+locals {
+  # Build the LabRole ARN from whatever account we are deployed into, so a new
+  # lab account needs no code change. Logging is off unless explicitly enabled.
+  apigw_cloudwatch_role_arn = var.API_GW_ENABLE_LOGGING ? "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole" : ""
+}
+
 module "cognito" {
   source = "../../modules/Cognito"
 
@@ -231,7 +239,8 @@ module "internal_api" {
   vpc_endpoint_id = data.terraform_remote_state.networking.outputs.execute_api_endpoint_id
 
   # Identity-attributed access logging (service + authentication layers)
-  access_log_group_arn = ""  # disabled: Learner Lab cannot set account CloudWatch role
+  access_log_group_arn = data.terraform_remote_state.networking.outputs.api_access_log_group_arn
+  cloudwatch_role_arn  = local.apigw_cloudwatch_role_arn
 
   functions = {
     for key, name in module.lambda.function_names : key => {
