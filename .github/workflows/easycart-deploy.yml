@@ -59,11 +59,6 @@ jobs:
           terraform_version: "1.12.2"
           terraform_wrapper: false
 
-      - name: Bootstrap Terraform state bucket (creates it if missing)
-        run: |
-          python3 -m pip install --quiet boto3
-          python3 scripts/bootstrap_state_bucket.py
-
       - name: Build Lambda zips (real app code in infra/lambda)
         run: bash scripts/build_lambdas.sh
 

@@ -25,14 +25,3 @@ variable "STATE_BUCKET" {
   type        = string
   description = "S3 bucket holding Terraform state — must match backend.hcl."
 }
-
-variable "API_GW_ENABLE_LOGGING" {
-  type    = bool
-  default = false
-}
-
-variable "API_GW_CLOUDWATCH_ROLE_ARN_UNUSED" {
-  type        = string
-  description = "Role ARN API Gateway assumes to push logs to CloudWatch. Empty disables API access logging."
-  default     = ""
-}

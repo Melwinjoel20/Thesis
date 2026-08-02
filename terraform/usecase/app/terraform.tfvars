@@ -23,10 +23,3 @@ LAMBDA_ZIP_DIR = "../../../infra/lambda" # the app repo's real Lambda code (repo
 
 # Must match the bucket in infra/backend.hcl
 STATE_BUCKET = "easycart-tfstate-mel4821"
-
-# Account-level role for API Gateway -> CloudWatch logging (RQ3 service plane).
-# Learner Lab: LabRole. Set to "" to disable access logging if the account
-# setting cannot be made.
-# API GW logging role is built dynamically from the current account in main.tf.
-# Set API_GW_ENABLE_LOGGING = true to turn it on (requires account-level permission).
-API_GW_ENABLE_LOGGING = false
