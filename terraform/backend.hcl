@@ -11,6 +11,6 @@
 #      grep -rl "easycart-tfstate-mel4821" . | xargs sed -i 's/easycart-tfstate-mel4821/<your-bucket>/'
 # =============================================================================
 
-bucket       = "easycart-tfstate-mel4821"
+bucket       = "easycart-tfstate-264418110922"
 region       = "us-east-1"
 use_lockfile = true # native S3 state locking — requires Terraform >= 1.10

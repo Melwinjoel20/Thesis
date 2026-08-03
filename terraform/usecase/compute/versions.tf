@@ -39,11 +39,13 @@ data "aws_ami" "al2023" {
 #
 # IMPORTANT: run `terraform apply` in usecase/networking/ BEFORE applying this.
 # -----------------------------------------------------------------------------
+data "aws_caller_identity" "current" {}
+
 data "terraform_remote_state" "networking" {
   backend = "s3"
 
   config = {
-    bucket = var.STATE_BUCKET
+    bucket = "easycart-tfstate-${data.aws_caller_identity.current.account_id}"
     key    = "easycart/networking.tfstate"
     region = var.REGION
   }

@@ -53,6 +53,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Bootstrap remote state bucket (per-account, automatic)
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET="easycart-tfstate-${ACCOUNT_ID}"
+          echo "Using state bucket: $BUCKET"
+
+          if aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null; then
+            echo "Bucket already exists, reusing."
+          else
+            echo "Bucket not found, creating..."
+            aws s3 mb "s3://$BUCKET" --region us-east-1
+            aws s3api put-bucket-versioning --bucket "$BUCKET" --versioning-configuration Status=Enabled
+          fi
+
+          cat > terraform/backend.hcl <<EOF
+          bucket       = "$BUCKET"
+          region       = "us-east-1"
+          use_lockfile = true
+          EOF
+
+          echo "Wrote terraform/backend.hcl:"
+          cat terraform/backend.hcl
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
