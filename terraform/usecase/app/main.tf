@@ -151,9 +151,17 @@ resource "aws_vpc_endpoint" "sns" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  # Build the LabRole ARN from whatever account we are deployed into, so a new
-  # lab account needs no code change. Logging is off unless explicitly enabled.
-  apigw_cloudwatch_role_arn = var.API_GW_ENABLE_LOGGING ? "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole" : ""
+  # API Gateway access logging is off unless explicitly enabled. Both the
+  # CloudWatch role ARN AND the log group ARN must be gated together —
+  # passing a log group ARN while the role ARN is empty makes the module
+  # try to enable access logging without an account-level CloudWatch role,
+  # which Learner Lab does not allow to be set ("CloudWatch Logs role ARN
+  # must be set in account settings to enable logging").
+  api_logging_enabled = var.API_GW_ENABLE_LOGGING
+
+  apigw_cloudwatch_role_arn = local.api_logging_enabled ? "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole" : ""
+
+  apigw_access_log_group_arn = local.api_logging_enabled ? data.terraform_remote_state.networking.outputs.api_access_log_group_arn : ""
 }
 
 module "cognito" {
@@ -238,8 +246,9 @@ module "internal_api" {
   user_pool_arn   = module.cognito.user_pool_arn
   vpc_endpoint_id = data.terraform_remote_state.networking.outputs.execute_api_endpoint_id
 
-  # Identity-attributed access logging (service + authentication layers)
-  access_log_group_arn = data.terraform_remote_state.networking.outputs.api_access_log_group_arn
+  # Identity-attributed access logging (service + authentication layers).
+  # Both ARNs are gated on API_GW_ENABLE_LOGGING together — see locals above.
+  access_log_group_arn = local.apigw_access_log_group_arn
   cloudwatch_role_arn  = local.apigw_cloudwatch_role_arn
 
   functions = {
