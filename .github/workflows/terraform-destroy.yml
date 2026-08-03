@@ -50,6 +50,11 @@ jobs:
           terraform_version: "1.12.2"
           terraform_wrapper: false
 
+      - name: Point backend at this account's state bucket
+        run: |
+          python3 -m pip install --quiet boto3
+          python3 scripts/bootstrap_state_bucket.py
+
       # Zips must exist so the app stack's filebase64sha256() can evaluate.
       - name: Build Lambda zips (needed to evaluate the app stack)
         run: bash scripts/build_lambdas.sh
