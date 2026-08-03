@@ -46,3 +46,9 @@ variable "access_log_group_arn" {
   description = "CloudWatch log group ARN for identity-attributed access logs. Empty disables."
   default     = ""
 }
+
+variable "cloudwatch_role_arn" {
+  type        = string
+  description = "Account-level role API Gateway assumes to write logs. Empty disables access logging and tracing."
+  default     = ""
+}

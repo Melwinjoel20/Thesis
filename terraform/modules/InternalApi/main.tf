@@ -104,12 +104,23 @@ resource "aws_api_gateway_deployment" "this" {
   depends_on = [aws_api_gateway_integration.fn, aws_api_gateway_rest_api_policy.this]
 }
 
+# API Gateway (REST) requires an ACCOUNT-LEVEL CloudWatch Logs role before any
+# stage may write access or execution logs. This is a one-time, account-wide
+# setting rather than a per-API one, hence the guard: it is created only when a
+# role is supplied, and only one API in the estate should own it.
+resource "aws_api_gateway_account" "this" {
+  count               = var.cloudwatch_role_arn != "" ? 1 : 0
+  cloudwatch_role_arn = var.cloudwatch_role_arn
+}
+
 resource "aws_api_gateway_stage" "this" {
   rest_api_id   = aws_api_gateway_rest_api.this.id
   deployment_id = aws_api_gateway_deployment.this.id
   stage_name    = var.stage_name
 
-  xray_tracing_enabled = var.access_log_group_arn != ""
+  xray_tracing_enabled = var.cloudwatch_role_arn != ""
+
+  depends_on = [aws_api_gateway_account.this]
 
   # Private-endpoint access log. The authoriser claims are emitted alongside
   # the network 5-tuple context, which is what allows a request arriving
