@@ -161,40 +161,30 @@ jobs:
         if: env.DO_APPLY == 'true'
         run: python3 scripts/generate_config.py
 
-      # Seed the data tier once the tables and bucket exist. These scripts talk
-      # to DynamoDB and S3 over the public AWS API (not the private app path),
-      # so they run fine from the runner. Idempotent: image/product writes
-      # overwrite, so re-running a deploy simply refreshes the catalogue.
-     # - name: Seed DynamoDB tables, product images and admin user
-      #  if: env.DO_APPLY == 'true'
-      #  run: |
-      #    python3 -m pip install --quiet boto3 passlib
-      #    echo "Seeding products and images..."
-      #    python3 infra/setup_products.py
-      #    echo "Uploading logo..."
-      #    BUCKET=$(terraform -chdir=terraform/usecase/storage output -raw bucket_name)
-       #   aws s3 cp infra/EasyCartLogo.png "s3://${BUCKET}/images/EasyCartLogo.png"
-       #   echo "Creating admin user(s)..."
-       #   ADMIN_EMAIL="${{ secrets.ADMIN_EMAIL }}" \
-       #   ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}" \
-       #   ADMIN_ROLE="SUPER_ADMIN" \
-       #   python3 infra/EasyCartAdminUsers.py
+      - name: Seed DynamoDB tables and admin user
+        if: env.DO_APPLY == 'true'
+        run: |
+          python3 -m pip install --quiet boto3 passlib
+          echo "Seeding product tables..."
+          python3 infra/setup_products.py
 
-          # Make the admin a Cognito user and add to the EasyCartAdmins group,
-          # which is what the app checks for dashboard access. Create + confirm
-          # the user, then add to the group. Ignore errors if it already exists.
-       #   POOL=$(python3 -c "import json;print(json.load(open('infra/config.json'))['user_pool_id'])")
-       #   if [ -n "${{ secrets.ADMIN_EMAIL }}" ] && [ -n "$POOL" ]; then
-       #     aws cognito-idp admin-create-user --region us-east-1 --user-pool-id "$POOL" \
-        #      --username "${{ secrets.ADMIN_EMAIL }}" --message-action SUPPRESS \
-        #      --user-attributes Name=email,Value="${{ secrets.ADMIN_EMAIL }}" Name=email_verified,Value=true || true
-        #    aws cognito-idp admin-set-user-password --region us-east-1 --user-pool-id "$POOL" \
-        #      --username "${{ secrets.ADMIN_EMAIL }}" --password "${{ secrets.ADMIN_PASSWORD }}" --permanent || true
-        #    aws cognito-idp admin-add-user-to-group --region us-east-1 --user-pool-id "$POOL" \
-        #      --username "${{ secrets.ADMIN_EMAIL }}" --group-name EasyCartAdmins || true
-        #    echo "Admin cognito user ensured and added to EasyCartAdmins."
-        #  fi
-       #   echo "Seeding complete."
+          echo "Creating admin user..."
+          ADMIN_EMAIL="${{ secrets.ADMIN_EMAIL }}" \
+          ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}" \
+          ADMIN_ROLE="SUPER_ADMIN" \
+          python3 infra/EasyCartAdminUsers.py
+
+          POOL=$(python3 -c "import json;print(json.load(open('infra/config.json'))['user_pool_id'])")
+          if [ -n "${{ secrets.ADMIN_EMAIL }}" ] && [ -n "$POOL" ]; then
+            aws cognito-idp admin-create-user --region us-east-1 --user-pool-id "$POOL" \
+              --username "${{ secrets.ADMIN_EMAIL }}" --message-action SUPPRESS \
+              --user-attributes Name=email,Value="${{ secrets.ADMIN_EMAIL }}" Name=email_verified,Value=true || true
+            aws cognito-idp admin-set-user-password --region us-east-1 --user-pool-id "$POOL" \
+              --username "${{ secrets.ADMIN_EMAIL }}" --password "${{ secrets.ADMIN_PASSWORD }}" --permanent || true
+            aws cognito-idp admin-add-user-to-group --region us-east-1 --user-pool-id "$POOL" \
+              --username "${{ secrets.ADMIN_EMAIL }}" --group-name EasyCartAdmins || true
+          fi
+          echo "Seeding complete."
 
       - name: Vendor Python wheels (instance has no internet — pip must install offline)
         if: env.DO_APPLY == 'true'
