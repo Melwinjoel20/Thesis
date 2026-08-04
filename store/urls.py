@@ -31,6 +31,7 @@ urlpatterns = [
      path("delete/<str:category>/<str:product_id>/", views_admin.admin_delete_product, name="admin_delete_product"),
      path('get-location/', views.get_location, name='get_location'),
      path("offers/", views.offers, name="offers"),
+     path("images/<path:key>/", views.serve_image, name="serve_image"),
 
 
 ]

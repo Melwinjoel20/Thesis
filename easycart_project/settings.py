@@ -169,7 +169,8 @@ COGNITO = {
 # ====== S3 Settings ======
 S3_BUCKET = infra_config.get("bucket_name")  # from config.json - written by scripts/generate_config.py
 S3_REGION = infra_config.get("region")
-S3_LOGO_KEY = "images/EasyCartLogo.png"      # FIXED — must be an S3 key, not a URL
+S3_LOGO_KEY = "images/EasyCartLogo.png"
+S3_LOGO_URL = "/store/images/images/EasyCartLogo.png"      # FIXED — must be an S3 key, not a URL
 
 
 def generate_presigned_logo_url():
