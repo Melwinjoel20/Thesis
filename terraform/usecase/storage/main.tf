@@ -67,7 +67,7 @@ resource "aws_s3_object" "product_images" {
 resource "aws_s3_object" "logo" {
   bucket       = module.s3.bucket_name
   key          = "images/EasyCartLogo.png"
-  source       = "${path.root}/../../infra/EasyCartLogo.png"
+  source       = "${path.module}/../../../infra/EasyCartLogo.png"
   etag         = filemd5("${path.module}/../../../infra/EasyCartLogo.png")
   content_type = "image/png"
 
