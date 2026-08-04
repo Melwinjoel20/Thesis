@@ -68,7 +68,7 @@ resource "aws_s3_object" "logo" {
   bucket       = module.s3.bucket_name
   key          = "images/EasyCartLogo.png"
   source       = "${path.root}/../../infra/EasyCartLogo.png"
-  etag         = filemd5("${path.root}/../../infra/EasyCartLogo.png")
+  etag         = filemd5("${path.root}/../EasyCartLogo.png")
   content_type = "image/png"
 
   tags = merge(local.default_tags, {
