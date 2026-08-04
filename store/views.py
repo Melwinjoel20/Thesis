@@ -6,6 +6,9 @@ from django.contrib.messages import get_messages
 from botocore.exceptions import ClientError
 from easycart_rate_limiter import check_rate_limit
 from botocore.config import Config
+from django.http import HttpResponse, Http404
+from django.views.decorators.http import require_GET
+from django.views.decorators.cache import cache_control
 import hmac
 import hashlib
 import base64

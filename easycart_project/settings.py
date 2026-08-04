@@ -186,8 +186,6 @@ def generate_presigned_logo_url():
         return ""
 
 
-# (Optional) Generate once on startup
-SIGNED_LOGO_URL = generate_presigned_logo_url()
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
