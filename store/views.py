@@ -511,7 +511,7 @@ def products(request, category=None):
 
         for item in items:
             key = item.get("image")
-            item["image_url"] = f"/store/images/{key}" if key else None
+            item["image_url"] = f"/store/images/{key}" if key else None 
 
     lambda_cfg = settings.COGNITO["lambda_cart_endpoints"]
 
