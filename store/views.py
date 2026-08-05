@@ -508,10 +508,13 @@ def products(request, category=None):
             "REMOVE_ITEM_URL": "",
         })
 
-
-        for item in items:
-            key = item.get("image")
-            item["image_url"] = f"/store/images/{key}" if key else None 
+    # Build proxy image URLs — runs on the normal path, NOT inside except.
+    # The key in DynamoDB already includes "product-images/", so the proxy
+    # URL is /store/images/product-images/<filename>, served privately by
+    # store/views.serve_image via the S3 gateway endpoint.
+    for item in items:
+        key = item.get("image")
+        item["image_url"] = f"/store/images/{key}" if key else None
 
     lambda_cfg = settings.COGNITO["lambda_cart_endpoints"]
 
