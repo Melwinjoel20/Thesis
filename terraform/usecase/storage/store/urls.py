@@ -1,0 +1,39 @@
+from django.contrib import admin
+from django.urls import path
+from . import views
+from . import admins_view as views_admin
+from . import cart_api
+
+urlpatterns = [
+     # Private image proxy - serves S3 objects via the S3 gateway endpoint (R7)
+     path("images/<path:key>/", views.serve_image, name="serve_image"),
+
+     # Server-side cart API — Django proxies to the private Lambdas (boto3)
+     path("api/cart/add/", cart_api.add_to_cart, name="api_cart_add"),
+     path("api/cart/view/", cart_api.view_cart, name="api_cart_view"),
+     path("api/cart/remove/", cart_api.remove_cart_item, name="api_cart_remove"),
+     path("api/order/place/", cart_api.place_order, name="api_order_place"),
+     path("api/tax/", cart_api.tax_calculator, name="api_tax"),
+
+     path('base/',views.base,name="base"),
+     path('home/',views.home,name="home"),
+     path("register/", views.register, name="register"),
+     path("login/", views.login_view, name="login"),
+     path("logout/", views.logout_view, name="logout"),
+     path("products/", views.products, name="products"),
+     path("products/<str:category>/", views.products, name="products"),
+     path("cart/", views.view_cart, name="view_cart"),
+     path("checkout/", views.checkout, name="checkout"),
+     path("order-confirmation/", views.order_confirmation, name="order_confirmation"),
+     path("verify-otp/", views.verify_otp, name="verify_otp"),
+     path("forgot_password/", views.forgot_password, name="forgot_password"),
+     path("reset_password/", views.reset_password, name="reset_password"),
+     path("admin_dashboard/", views_admin.admin_dashboard, name="admin_dashboard"),
+     path("add-product/", views_admin.admin_add_product, name="admin_add_product"),
+     path("manage-products/", views_admin.admin_manage_products, name="admin_manage_products"),
+     path("delete/<str:category>/<str:product_id>/", views_admin.admin_delete_product, name="admin_delete_product"),
+     path('get-location/', views.get_location, name='get_location'),
+     path("offers/", views.offers, name="offers"),
+
+
+]
