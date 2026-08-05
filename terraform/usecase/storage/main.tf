@@ -45,10 +45,6 @@ module "s3" {
 # Upload product images at deploy time.
 # fileset() lists every file under infra/product_images; etag ensures
 # Terraform only re-uploads when a file's content changes.
-locals {
-  image_dir = "${path.root}/../../infra/product_images"
-}
-
 resource "aws_s3_object" "product_images" {
   for_each = fileset(local.image_dir, "*.{jpg,jpeg,png,gif,webp}")
 
