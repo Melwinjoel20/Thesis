@@ -6,6 +6,9 @@ from django.contrib.messages import get_messages
 from botocore.exceptions import ClientError
 from easycart_rate_limiter import check_rate_limit
 from botocore.config import Config
+from django.http import HttpResponse, Http404
+from django.views.decorators.http import require_GET
+from django.views.decorators.cache import cache_control
 import hmac
 import hashlib
 import base64
@@ -416,22 +419,29 @@ def get_all_categories():
     return ["MenClothes", "WomenClothes", "KidsClothes"]
 
 
-def generate_presigned_image_url(key: str):
+@require_GET
+@cache_control(max_age=3600, private=True)
+def serve_image(request, key):
+    """
+    Serve a private S3 object through Django.
+    
+    Traffic path: browser → VPN → ALB → Django → S3 gateway endpoint (private).
+    No presigned URL, no public S3 hostname, no public internet path.
+    """
     s3 = boto3.client(
         "s3",
         region_name=settings.S3_REGION,
-        config=Config(signature_version="s3v4")
+        config=Config(connect_timeout=3, read_timeout=10),
     )
-
     try:
-        return s3.generate_presigned_url(
-            ClientMethod="get_object",
-            Params={"Bucket": settings.S3_BUCKET, "Key": key},
-            ExpiresIn=3600,
-        )
-    except Exception as e:
-        print("Error generating image URL:", e)
-        return None
+        response = s3.get_object(Bucket=settings.S3_BUCKET, Key=key)
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise Http404
+        raise
+
+    content_type = response.get("ContentType", "image/jpeg")
+    return HttpResponse(response["Body"].read(), content_type=content_type)
 
 
 
@@ -498,9 +508,13 @@ def products(request, category=None):
             "REMOVE_ITEM_URL": "",
         })
 
+    # Build proxy image URLs — runs on the normal path, NOT inside except.
+    # The key in DynamoDB already includes "product-images/", so the proxy
+    # URL is /store/images/product-images/<filename>, served privately by
+    # store/views.serve_image via the S3 gateway endpoint.
     for item in items:
         key = item.get("image")
-        item["image_url"] = generate_presigned_image_url(key) if key else None
+        item["image_url"] = f"/store/images/{key}" if key else None
 
     lambda_cfg = settings.COGNITO["lambda_cart_endpoints"]
 

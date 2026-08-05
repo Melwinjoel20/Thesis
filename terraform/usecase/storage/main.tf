@@ -41,3 +41,33 @@ module "s3" {
     "Spoke"   = "Hub"
   })
 }
+
+# Upload product images at deploy time.
+# fileset() lists every file under infra/product_images; etag ensures
+# Terraform only re-uploads when a file's content changes.
+resource "aws_s3_object" "product_images" {
+  for_each = fileset(local.image_dir, "*.{jpg,jpeg,png,gif,webp}")
+
+  bucket       = module.s3.bucket_name
+  key          = "product-images/${each.value}"
+  source       = "${local.image_dir}/${each.value}"
+  etag         = filemd5("${local.image_dir}/${each.value}")
+  content_type = "image/jpeg"
+
+  tags = merge(local.default_tags, {
+    "Purpose" = "Product image"
+  })
+}
+
+# Upload the logo the same way.
+resource "aws_s3_object" "logo" {
+  bucket       = module.s3.bucket_name
+  key          = "images/EasyCartLogo.png"
+  source       = "${path.module}/../../../infra/EasyCartLogo.png"
+  etag         = filemd5("${path.module}/../../../infra/EasyCartLogo.png")
+  content_type = "image/png"
+
+  tags = merge(local.default_tags, {
+    "Purpose" = "Logo"
+  })
+}
