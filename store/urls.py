@@ -5,6 +5,9 @@ from . import admins_view as views_admin
 from . import cart_api
 
 urlpatterns = [
+     # Private image proxy - serves S3 objects via the S3 gateway endpoint (R7)
+     path("images/<path:key>/", views.serve_image, name="serve_image"),
+
      # Server-side cart API — Django proxies to the private Lambdas (boto3)
      path("api/cart/add/", cart_api.add_to_cart, name="api_cart_add"),
      path("api/cart/view/", cart_api.view_cart, name="api_cart_view"),
@@ -31,7 +34,6 @@ urlpatterns = [
      path("delete/<str:category>/<str:product_id>/", views_admin.admin_delete_product, name="admin_delete_product"),
      path('get-location/', views.get_location, name='get_location'),
      path("offers/", views.offers, name="offers"),
-     path("images/<path:key>/", views.serve_image, name="serve_image"),
 
 
 ]

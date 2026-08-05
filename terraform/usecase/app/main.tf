@@ -220,6 +220,23 @@ module "lambda" {
       zip_path = "${var.LAMBDA_ZIP_DIR}/tax_calculator.zip"
       env_vars = {}
     }
+    # R2: product reads/writes go through Lambda so the presentation tier
+    # (Django) has no direct DynamoDB path. The frontend VPC's DynamoDB
+    # gateway endpoint is removed in usecase/frontend, making this structural.
+    "get-products" = {
+      zip_path = "${var.LAMBDA_ZIP_DIR}/get_products.zip"
+      env_vars = {}
+    }
+    "manage-products" = {
+      zip_path = "${var.LAMBDA_ZIP_DIR}/manage_products.zip"
+      env_vars = {}
+    }
+    # R2: login rate-limiting also goes through Lambda so Django needs no
+    # DynamoDB path at all. The frontend VPC's DynamoDB endpoint is removed.
+    "rate-limit" = {
+      zip_path = "${var.LAMBDA_ZIP_DIR}/rate_limit.zip"
+      env_vars = { RATE_LIMIT_TABLE = "RateLimits" }
+    }
   }
 
   extra_tags = merge(local.default_tags, {

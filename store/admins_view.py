@@ -1,19 +1,16 @@
-from decimal import Decimal
-import boto3
+import json
 import uuid
+import boto3
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.http import JsonResponse
-from .views import admin_required
-import json
-
+from .views import admin_required, _invoke_lambda
 
 # =========================
 # CONFIG
 # =========================
-REGION     = settings.S3_REGION
-BUCKET     = settings.S3_BUCKET
+REGION = settings.S3_REGION
+BUCKET = settings.S3_BUCKET
 
 
 # =========================
@@ -25,63 +22,43 @@ def admin_dashboard(request):
 
 
 # =========================
-# HELPER: ENSURE BUCKET EXISTS
-# =========================
-def ensure_bucket_exists():
-    s3 = boto3.client("s3", region_name=REGION)
-    try:
-        s3.head_bucket(Bucket=BUCKET)
-    except Exception:
-        try:
-            s3.create_bucket(
-                Bucket=BUCKET,
-                CreateBucketConfiguration={"LocationConstraint": REGION}
-            )
-            print(f"Bucket '{BUCKET}' created successfully.")
-        except Exception as e:
-            print("Bucket creation failed:", e)
-            return False
-    return True
-
-
-# =========================
-# HELPER: UPLOAD FILE TO S3
+# HELPER: UPLOAD IMAGE TO S3 (server-side, via S3 gateway endpoint - R7)
 # =========================
 def upload_product_image_to_s3(file_obj):
+    """
+    Server-side upload through the frontend VPC's S3 gateway endpoint.
+    Returns the S3 key (not a URL). Images are served back to browsers via
+    the private Django proxy (store/views.serve_image), never a public URL.
+    """
     s3 = boto3.client("s3", region_name=REGION)
-
-    if not ensure_bucket_exists():
-        return None
-
-    ext         = file_obj.name.split(".")[-1]
-    unique_name = f"product-images/{uuid.uuid4()}.{ext}"
-
+    ext = file_obj.name.split(".")[-1]
+    key = f"product-images/{uuid.uuid4()}.{ext}"
     try:
         s3.upload_fileobj(
             file_obj,
             BUCKET,
-            unique_name,
-            ExtraArgs={"ContentType": file_obj.content_type}
+            key,
+            ExtraArgs={"ContentType": file_obj.content_type},
         )
-        return unique_name
+        return key
     except Exception as e:
         print("S3 Upload Error:", e)
         return None
 
 
 # =========================
-# ADD PRODUCT
+# ADD PRODUCT  (via manage-products Lambda - no direct DynamoDB, R2)
 # =========================
 @admin_required
 def admin_add_product(request):
     categories = settings.COGNITO.get("dynamodb_tables", [])
 
     if request.method == "POST":
-        category    = request.POST.get("category")
-        name        = request.POST.get("name")
+        category = request.POST.get("category")
+        name = request.POST.get("name")
         description = request.POST.get("description")
-        price       = Decimal(request.POST.get("price"))
-        image_file  = request.FILES.get("image_file")
+        price = request.POST.get("price")
+        image_file = request.FILES.get("image_file")
 
         if category not in categories:
             messages.error(request, "Invalid category selected.")
@@ -96,17 +73,20 @@ def admin_add_product(request):
             messages.error(request, "Failed to upload image to S3.")
             return redirect("admin_add_product")
 
-        dynamodb = boto3.resource("dynamodb", region_name=REGION)
-        table    = dynamodb.Table(category)
-        pid      = str(uuid.uuid4())
-
-        table.put_item(Item={
-            "product_id":  pid,
-            "name":        name,
-            "description": description,
-            "price":       price,
-            "image":       s3_key
-        })
+        try:
+            status, body = _invoke_lambda("manage-products", {
+                "action": "add",
+                "category": category,
+                "name": name,
+                "description": description,
+                "price": float(price),
+                "image": s3_key,
+            })
+            if status != 200:
+                raise RuntimeError(body.get("error", "add failed"))
+        except Exception as e:
+            messages.error(request, f"Failed to add product: {e}")
+            return redirect("admin_add_product")
 
         messages.success(request, "Product added successfully!")
         return redirect("admin_dashboard")
@@ -115,66 +95,51 @@ def admin_add_product(request):
 
 
 # =========================
-# VIEW / LIST ALL PRODUCTS
+# VIEW / LIST ALL PRODUCTS  (via manage-products Lambda - R2)
 # =========================
 @admin_required
 def admin_manage_products(request):
-    dynamodb   = boto3.resource("dynamodb", region_name=REGION)
     categories = settings.COGNITO.get("dynamodb_tables", [])
-    products   = []
-
-    for cat in categories:
-        table = dynamodb.Table(cat)
-        res   = table.scan().get("Items", [])
-        for item in res:
-            item["category"] = cat
-            products.append(item)
+    products = []
+    try:
+        status, body = _invoke_lambda("manage-products", {"action": "list"})
+        if status == 200 and isinstance(body, list):
+            products = body
+    except Exception as e:
+        messages.error(request, f"Failed to load products: {e}")
 
     return render(request, "admin/manage_products.html", {
-        "products":   products,
-        "categories": categories
+        "products": products,
+        "categories": categories,
     })
 
 
 # =========================
-# DELETE PRODUCT
+# DELETE PRODUCT  (via manage-products Lambda - R2)
 # =========================
 @admin_required
 def admin_delete_product(request, category, product_id):
-    dynamodb = boto3.resource("dynamodb", region_name=REGION)
-    table    = dynamodb.Table(category)
-
     try:
-        res  = table.get_item(Key={"product_id": product_id})
-        item = res.get("Item")
-
-        if not item:
-            messages.error(request, "Product not found.")
-            return redirect("admin_manage_products")
-
-        image_key = item.get("image")
-
+        status, body = _invoke_lambda("manage-products", {
+            "action": "delete",
+            "category": category,
+            "product_id": product_id,
+        })
+        if status != 200:
+            raise RuntimeError(body.get("error", "delete failed"))
+        image_key = body.get("image_key")
     except Exception as e:
-        print("Error fetching product:", e)
-        messages.error(request, "Unable to fetch product.")
+        messages.error(request, f"Failed to delete product: {e}")
         return redirect("admin_manage_products")
 
-    ensure_bucket_exists()
-
+    # Remove the image object server-side via the S3 gateway endpoint.
     if image_key:
         try:
             s3 = boto3.client("s3", region_name=REGION)
             s3.delete_object(Bucket=BUCKET, Key=image_key)
-            print(f"Deleted S3 Image: {image_key}")
         except Exception as e:
             print("S3 delete failed:", e)
             messages.warning(request, "Product deleted, but image could not be removed.")
 
-    try:
-        table.delete_item(Key={"product_id": product_id})
-        messages.success(request, "Product removed successfully!")
-    except Exception as e:
-        print("DynamoDB delete failed:", e)
-        messages.error(request, "Failed to delete item from database.")
-
+    messages.success(request, "Product removed successfully!")
     return redirect("admin_manage_products")

@@ -117,7 +117,7 @@ module "s3_endpoint" {
 
   vpc_id          = local.frontend_vpc_id
   route_table_ids = values(data.terraform_remote_state.networking.outputs.route_table_ids["frontend"])
-  service_names   = ["s3", "dynamodb"] # dynamodb: Django reads products/admin/rate-limit tables directly
+  service_names   = ["s3"] # R2: DynamoDB endpoint removed - Django reaches data only via Lambda (interface endpoint below)
 
   extra_tags = merge(local.default_tags, {
     "Purpose" = "S3 access for EB platform assets and app bundles"
