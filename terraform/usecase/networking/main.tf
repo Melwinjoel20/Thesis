@@ -8,7 +8,8 @@ module "hub_vpc" {
   name_suffix  = var.HUB_VPC.name_suffix
 
   vpc_cidr   = var.HUB_VPC.vpc_cidr
-  enable_igw = false # No IGW — fully private, access via SSM only
+  # No IGW — fully private, access via SSM only
+  enable_igw = false 
 
   subnets                  = var.HUB_VPC.subnets
   route_tables             = var.HUB_VPC.route_tables

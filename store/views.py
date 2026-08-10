@@ -169,7 +169,7 @@ def login_view(request):
             return redirect("login")
 
         request.session["user_email"] = email
-        request.session["user_name"] = full_name
+        request.session["user_name"] = full_name or email
         request.session["user_id"] = email
 
         groups = get_user_groups(email)
