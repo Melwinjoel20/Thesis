@@ -1,15 +1,9 @@
-# =============================================================================
-# Module: Lambda
-# Description: Creates all Lambda functions inside the App Spoke VPC
-#              private subnet. Functions are not publicly accessible.
-#              Traffic from frontend reaches them via PrivateLink / TGW through Hub.
-#              Matches the lambda/ functions: add_to_cart, view_cart,
-#              remove_cart_item, place_order, tax_calculator.
-# =============================================================================
 
-# -----------------------------------------------------------------------------
+# Module: Lambda
+
+
 # Lambda Functions — created dynamically from the functions map
-# -----------------------------------------------------------------------------
+
 resource "aws_lambda_function" "this" {
   for_each = var.functions
 

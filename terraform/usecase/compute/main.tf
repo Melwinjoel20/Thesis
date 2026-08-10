@@ -1,21 +1,7 @@
-# =============================================================================
-# Use Case: Compute
-#
-# Deploys one private EC2 test instance per VPC.
-# All instance and subnet IDs come from the networking layer via remote state
-# — no IDs are hardcoded here.
-#
-# Access: SSM Session Manager only (no public IP, no key pair, no port 22).
-# Test:   ping between instances to verify TGW routing and segmentation.
-#
-# Destroy this layer freely to save Learner Lab budget — the networking layer
-# (VPCs, TGW, endpoints) stays untouched and can be reused when you come back.
-# =============================================================================
 
-# -----------------------------------------------------------------------------
 # Hub — management and ingress plane
 # SSM into this instance first, then ping the spokes from here.
-# -----------------------------------------------------------------------------
+# 
 module "hub_ec2" {
   source = "../../modules/Compute"
 

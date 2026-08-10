@@ -138,9 +138,9 @@ module "transit_gateway" {
       destination_cidr = var.APP_VPC.vpc_cidr
     }
 
-    # ------------------------------------------------------------------
-    # App → hub + frontend + database  (central tier — talks to everyone)
-    # ------------------------------------------------------------------
+    
+    # App → hub + frontend + database  
+    
     "app-to-hub" = {
       route_table_id   = module.app_vpc.route_table_ids["private-rt"]
       destination_cidr = var.HUB_VPC.vpc_cidr
@@ -154,9 +154,9 @@ module "transit_gateway" {
       destination_cidr = var.DATABASE_VPC.vpc_cidr
     }
 
-    # ------------------------------------------------------------------
+   
     # Database → hub + app  (NOT frontend)
-    # ------------------------------------------------------------------
+    
     "database-to-hub" = {
       route_table_id   = module.database_vpc.route_table_ids["private-rt"]
       destination_cidr = var.HUB_VPC.vpc_cidr
@@ -268,11 +268,7 @@ module "gateway_endpoints_database" {
   extra_tags      = local.default_tags
 }
 
-# -----------------------------------------------------------------------------
-# Hub — execute-api Interface endpoint (entry point for the internal private
-# API Gateway; the API itself lives in the app layer). Reachable from every
-# spoke over the TGW.
-# -----------------------------------------------------------------------------
+
 module "hub_api_ingress" {
   source = "../../modules/InterfaceEndpoints"
 
@@ -294,18 +290,7 @@ module "hub_api_ingress" {
   extra_tags = local.default_tags
 }
 
-# -----------------------------------------------------------------------------
-# Point-to-site VPN (AWS Client VPN) — optional, cost-bearing.
-# Connect with the AWS VPN Client, then browse the app on its REAL domain:
-# the EB CNAME resolves publicly to the internal ALB's private IPs, and the
-# VPN provides the route. Toggle off when not demoing (~$0.15+/hr).
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# Forensic-readiness layer. Declared here because the network-layer records
-# (VPC Flow Logs) and the VPN translation records both belong to the network
-# foundation; the app layer consumes the service/application log groups it
-# creates via remote state.
-# -----------------------------------------------------------------------------
+
 module "observability" {
   source = "../../modules/Observability"
 

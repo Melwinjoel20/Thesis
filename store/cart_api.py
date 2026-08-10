@@ -1,23 +1,3 @@
-"""
-Server-side cart API — Django proxies to the private Lambda functions.
-
-The browser calls these local endpoints (same origin, session-authenticated);
-Django invokes the corresponding Lambda through the frontend VPC's Lambda
-interface endpoint and relays the JSON response. No API Gateway, no public
-Lambda surface — the zero-trust replacement for the old
-https://...execute-api.../prod/* endpoints.
-
-Each Lambda already speaks API-Gateway-proxy shape (httpMethod, body,
-queryStringParameters -> {statusCode, body}), so we wrap requests in that
-event format and unwrap the response.
-
-Security model: identity comes from the Django session (set at login), never
-from the client payload — user_id in the body is overwritten server-side.
-CSRF is exempted on these JSON endpoints because the legacy templates POST
-without a CSRF token (they were built for API Gateway + JWT); the session
-cookie's SameSite=Lax plus the JSON content type limit the practical risk
-for this project.
-"""
 
 import json
 import logging

@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
 """
 Fetch a Cognito ID token for testing the internal JWT API.
-
-Usage:
-    python3 scripts/get_token.py <email> <password>
-
-Reads pool/client/secret from infra/config.json (run generate_config.py
-first). Prints the ID token — pass it to the API in the Authorization
-header (raw token, no 'Bearer' prefix, as the Cognito authorizer expects):
-
-    TOKEN=$(python3 scripts/get_token.py you@example.com 'YourPassword')
-    curl -H "Authorization: $TOKEN" "<internal_api_base_url>/view-cart?user_id=you@example.com"
 """
 
 import base64

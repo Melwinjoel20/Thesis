@@ -1,14 +1,10 @@
-# =============================================================================
-# Module: ElasticBeanstalk
-# Description: Creates an Elastic Beanstalk application and environment
-#              deployed inside a private subnet of the Frontend Spoke VPC.
-#              No public internet access — all ingress comes through the Hub
-#              VPC via Transit Gateway and AWS Client VPN.
-# =============================================================================
 
-# -----------------------------------------------------------------------------
+# Module: ElasticBeanstalk
+
+
+
 # EB Application
-# -----------------------------------------------------------------------------
+
 resource "aws_elastic_beanstalk_application" "this" {
   name        = "${var.name_prefix}-ebs-app-${var.product}-${var.environment}-${var.region_short}-${var.name_suffix}"
   description = "EasyCart Elastic Beanstalk Application"
@@ -16,10 +12,10 @@ resource "aws_elastic_beanstalk_application" "this" {
   tags = var.extra_tags
 }
 
-# -----------------------------------------------------------------------------
+
 # EB Environment — deployed in private subnet of Frontend Spoke VPC
-# Single instance for dev / Learner Lab
-# -----------------------------------------------------------------------------
+
+
 resource "aws_elastic_beanstalk_environment" "this" {
   name                = "${var.name_prefix}-ebs-env-${var.product}-${var.environment}-${var.region_short}-${var.name_suffix}"
   application         = aws_elastic_beanstalk_application.this.name
@@ -57,8 +53,6 @@ resource "aws_elastic_beanstalk_environment" "this" {
   }
 
   # Exactly one instance — LoadBalanced only because a fully private VPC
-  # cannot host SingleInstance (EB insists on an EIP + internet gateway).
-  # Django has no route at "/" — health-check /home/ instead (302 = login redirect)
   setting {
     namespace = "aws:elasticbeanstalk:environment:process:default"
     name      = "HealthCheckPath"

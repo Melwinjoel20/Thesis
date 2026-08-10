@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Builds easycart.ovpn from the deployed Client VPN endpoint + terraform certs.
-# Run AFTER networking applies with ENABLE_CLIENT_VPN=true:
-#   bash scripts/setup_vpn.sh
-# Then import easycart.ovpn into the AWS VPN Client (brew install --cask aws-vpn-client)
+
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

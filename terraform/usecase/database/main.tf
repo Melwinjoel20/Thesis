@@ -1,8 +1,4 @@
-# =============================================================================
-# Use Case: Database (Phase 3)
-# Deploys all DynamoDB tables into the Database Spoke VPC.
-# Private access only via VPC Gateway Endpoint — no public internet.
-# =============================================================================
+
 data "aws_caller_identity" "current" {}
 
 data "terraform_remote_state" "networking" {

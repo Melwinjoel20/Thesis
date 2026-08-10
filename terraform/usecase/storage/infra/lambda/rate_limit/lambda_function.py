@@ -57,7 +57,7 @@ def lambda_handler(event, context):
         allowed = _check(key, limit, window)
     except Exception as e:
         print("Rate limit error:", e)
-        # Fail-open so a backend hiccup never locks users out of login.
+        
         allowed = True
 
     return {"statusCode": 200, "body": json.dumps({"allowed": allowed})}

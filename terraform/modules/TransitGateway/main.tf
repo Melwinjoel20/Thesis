@@ -1,7 +1,7 @@
 
-# -----------------------------------------------------------------------------
+
 # Transit Gateway
-# -----------------------------------------------------------------------------
+
 resource "aws_ec2_transit_gateway" "this" {
   description                     = "Transit Gateway for ${var.product}-${var.environment} hub-and-spoke"
   auto_accept_shared_attachments  = "enable"
@@ -13,9 +13,9 @@ resource "aws_ec2_transit_gateway" "this" {
   })
 }
 
-# -----------------------------------------------------------------------------
+
 # Transit Gateway VPC Attachments — one per VPC passed in
-# -----------------------------------------------------------------------------
+
 resource "aws_ec2_transit_gateway_vpc_attachment" "this" {
   for_each = var.vpc_attachments
 

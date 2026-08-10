@@ -1,10 +1,6 @@
-# =============================================================================
+
 # Module: S3
-# Description: Creates a private S3 bucket for product images and logo.
-#              No public access. Accessed via S3 VPC Endpoint from Hub VPC.
-#              Replaces the public bucket from create_s3.py — Zero Trust
-#              means no public S3 buckets.
-# =============================================================================
+
 
 resource "aws_s3_bucket" "this" {
   bucket = var.bucket_name
@@ -43,7 +39,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
 }
 
 # VPC Endpoint for S3 — optional: skip when the VPC already has one
-# (e.g. networking's gateway_endpoints_hub creates s3 + dynamodb in the hub).
+
 resource "aws_vpc_endpoint" "s3" {
   count = var.create_vpc_endpoint ? 1 : 0
 

@@ -5,7 +5,7 @@ ENVIRONMENT  = "dev"
 REGION       = "us-east-1"
 REGION_SHORT = "ue1"
 
-# Learner Lab pre-made instance profile — do not change
+# Learner Lab pre-made instance profile
 INSTANCE_PROFILE = "LabInstanceProfile"
 INSTANCE_TYPE    = "t3.micro"
 

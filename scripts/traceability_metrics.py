@@ -1,33 +1,6 @@
 #!/usr/bin/env python3
 """
 Zero-trust traceability analyser.
-
-Computes two forensic-readiness metrics from the CloudWatch log substrate
-created by the Observability module:
-
-  Tu (network-layer IP User Traceability), after Inukonda et al. (2023):
-
-        Tu = (Iu / IT) x 100
-
-      IT = distinct private source addresses observed in VPC Flow Logs
-      Iu = those addresses that can be resolved to an authenticated identity
-           by joining against Client VPN connection (translation) logs
-
-  Ts (service-layer traceability), this work's extension:
-
-        Ts = (Ra / RT) x 100
-
-      RT = requests recorded in the private API Gateway access log
-      Ra = those carrying a verified authoriser identity (a token subject)
-
-The network metric answers "can we attribute a packet to a person?"; the
-service metric answers "can we attribute a call to a verified principal?".
-Reporting both is the point: a deployment can score highly on one and poorly
-on the other, and only the pair describes forensic readiness end to end.
-
-Usage:
-    python3 scripts/traceability_metrics.py --hours 24
-    python3 scripts/traceability_metrics.py --hours 6 --json results.json
 """
 
 from __future__ import annotations

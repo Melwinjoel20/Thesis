@@ -1,6 +1,6 @@
-# =============================================================================
+
 # Module: TransitGateway — Outputs
-# =============================================================================
+
 
 output "transit_gateway_id" {
   description = "The ID of the Transit Gateway."

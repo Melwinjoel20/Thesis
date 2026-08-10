@@ -11,8 +11,7 @@ locals {
   }
 
   # Pull networking outputs into local values for cleaner references below.
-  # Instead of writing data.terraform_remote_state.networking.outputs.vpc_ids["hub"]
-  # everywhere, we alias them here.
+
   vpc_ids    = data.terraform_remote_state.networking.outputs.vpc_ids
   subnet_ids = data.terraform_remote_state.networking.outputs.subnet_ids
 }

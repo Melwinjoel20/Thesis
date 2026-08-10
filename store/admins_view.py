@@ -6,24 +6,24 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from .views import admin_required, _invoke_lambda
 
-# =========================
+
 # CONFIG
-# =========================
+
 REGION = settings.S3_REGION
 BUCKET = settings.S3_BUCKET
 
 
-# =========================
+
 # ADMIN DASHBOARD
-# =========================
+
 @admin_required
 def admin_dashboard(request):
     return render(request, "admin/admin_dashboard.html")
 
 
-# =========================
+
 # HELPER: UPLOAD IMAGE TO S3 (server-side, via S3 gateway endpoint - R7)
-# =========================
+
 def upload_product_image_to_s3(file_obj):
     """
     Server-side upload through the frontend VPC's S3 gateway endpoint.
@@ -46,9 +46,8 @@ def upload_product_image_to_s3(file_obj):
         return None
 
 
-# =========================
 # ADD PRODUCT  (via manage-products Lambda - no direct DynamoDB, R2)
-# =========================
+
 @admin_required
 def admin_add_product(request):
     categories = settings.COGNITO.get("dynamodb_tables", [])
@@ -94,9 +93,9 @@ def admin_add_product(request):
     return render(request, "admin/add_product.html", {"categories": categories})
 
 
-# =========================
+
 # VIEW / LIST ALL PRODUCTS  (via manage-products Lambda - R2)
-# =========================
+
 @admin_required
 def admin_manage_products(request):
     categories = settings.COGNITO.get("dynamodb_tables", [])
@@ -114,9 +113,9 @@ def admin_manage_products(request):
     })
 
 
-# =========================
+
 # DELETE PRODUCT  (via manage-products Lambda - R2)
-# =========================
+
 @admin_required
 def admin_delete_product(request, category, product_id):
     try:

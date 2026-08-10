@@ -1,20 +1,5 @@
-# =============================================================================
+
 # Use Case: Frontend (Phase 5)
-# Deploys Elastic Beanstalk into the Frontend Spoke VPC.
-# Internal ALB only — no public endpoint. Reached from the Hub via TGW.
-#
-# Wiring:
-#   - VPC / subnet IDs come from usecase/networking remote state.
-#   - Creates the instance security group (HTTP from Hub + App CIDRs).
-#   - The Frontend VPC has NO internet path, so this stack creates the
-#     endpoints the EB agent needs to bootstrap and report health:
-#       * S3 Gateway endpoint (platform assets + app bundle)
-#       * Interface endpoints: elasticbeanstalk, elasticbeanstalk-health,
-#         cloudformation, sqs
-#     Without these the environment hangs in "Launching" and times out.
-#
-# Run AFTER usecase/networking.
-# =============================================================================
 
 data "aws_caller_identity" "current" {}
 
@@ -28,7 +13,6 @@ data "terraform_remote_state" "networking" {
 }
 
 # Resolve the CURRENT Python 3.11 platform — EB rotates version numbers,
-# so a hardcoded name goes stale. This always picks the latest.
 data "aws_elastic_beanstalk_solution_stack" "python311" {
   most_recent = true
   name_regex  = "^64bit Amazon Linux 2023 v.+ running Python 3.11$"
@@ -38,9 +22,9 @@ data "aws_vpc" "frontend" {
   id = local.frontend_vpc_id
 }
 
-# -----------------------------------------------------------------------------
+
 # Security groups
-# -----------------------------------------------------------------------------
+
 resource "aws_security_group" "eb_instances" {
   name        = "fe-sg-eb-${var.PRODUCT}-${var.ENVIRONMENT}-${var.REGION_SHORT}-001"
   description = "EasyCart EB instances - HTTP from Hub and App spokes only"
@@ -102,9 +86,8 @@ resource "aws_security_group" "vpce" {
   })
 }
 
-# -----------------------------------------------------------------------------
+
 # VPC endpoints required by the Elastic Beanstalk agent in a private VPC
-# -----------------------------------------------------------------------------
 module "s3_endpoint" {
   source = "../../modules/GatewayEndpoints"
 
@@ -149,9 +132,9 @@ resource "aws_vpc_endpoint" "eb_interface" {
   })
 }
 
-# -----------------------------------------------------------------------------
+
 # Elastic Beanstalk — EasyCart frontend
-# -----------------------------------------------------------------------------
+
 module "elastic_beanstalk" {
   source = "../../modules/ElasticBeanstalk"
 

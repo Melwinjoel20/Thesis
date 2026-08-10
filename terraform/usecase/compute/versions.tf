@@ -27,18 +27,7 @@ data "aws_ami" "al2023" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Remote state — reads outputs from the networking use case so this layer
-# knows which subnets and VPCs to place instances into without hardcoding IDs.
-#
-# HOW IT WORKS:
-#   After `terraform apply` in usecase/networking/, Terraform writes a local
-#   state file at usecase/networking/terraform.tfstate. This data source reads
-#   that file and exposes every output from the networking layer as an
-#   attribute here. State lives in the shared S3 backend (see ../../backend.hcl).
-#
-# IMPORTANT: run `terraform apply` in usecase/networking/ BEFORE applying this.
-# -----------------------------------------------------------------------------
+
 data "aws_caller_identity" "current" {}
 
 data "terraform_remote_state" "networking" {
