@@ -1,19 +1,18 @@
 import boto3
+import json
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.messages import get_messages
 from botocore.exceptions import ClientError
-from easycart_rate_limiter import check_rate_limit
 from botocore.config import Config
-from django.http import HttpResponse, Http404
-from django.views.decorators.http import require_GET
-from django.views.decorators.cache import cache_control
 import hmac
 import hashlib
 import base64
 import requests
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, Http404
+from django.views.decorators.http import require_GET
+from django.views.decorators.cache import cache_control
 
 
 # =========================
@@ -419,36 +418,44 @@ def get_all_categories():
     return ["MenClothes", "WomenClothes", "KidsClothes"]
 
 
-@require_GET
-@cache_control(max_age=3600, private=True)
-def serve_image(request, key):
-    """
-    Serve a private S3 object through Django.
-    
-    Traffic path: browser → VPN → ALB → Django → S3 gateway endpoint (private).
-    No presigned URL, no public S3 hostname, no public internet path.
-    """
-    s3 = boto3.client(
-        "s3",
-        region_name=settings.S3_REGION,
-        config=Config(connect_timeout=3, read_timeout=10),
+def _invoke_lambda(function_key, payload):
+    """Invoke a private Lambda by its config key and return parsed JSON body.
+    Django reaches Lambda via the frontend VPC's Lambda interface endpoint;
+    it has no DynamoDB endpoint, so product data is only reachable this way (R2)."""
+    fn_name = settings.LAMBDA_FUNCTIONS.get(function_key)
+    if not fn_name:
+        raise RuntimeError(f"Lambda function '{function_key}' not in config")
+    client = boto3.client("lambda", region_name=settings.COGNITO["region"])
+    resp = client.invoke(
+        FunctionName=fn_name,
+        InvocationType="RequestResponse",
+        Payload=json.dumps(payload),
     )
+    result = json.loads(resp["Payload"].read())
+    status = result.get("statusCode", 500)
+    body = json.loads(result.get("body", "null"))
+    return status, body
+
+
+def check_rate_limit(key, limit=5, window=60):
+    """
+    R2: rate limiting no longer touches DynamoDB from Django. Instead it calls
+    the rate-limit Lambda in the app tier. Fails open (returns True) if the
+    service is unreachable so a backend hiccup never blocks login entirely.
+    """
     try:
-        response = s3.get_object(Bucket=settings.S3_BUCKET, Key=key)
-    except ClientError as e:
-        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
-            raise Http404
-        raise
-
-    content_type = response.get("ContentType", "image/jpeg")
-    return HttpResponse(response["Body"].read(), content_type=content_type)
-
-
+        status, body = _invoke_lambda("rate-limit", {
+            "key": key, "limit": limit, "window": window,
+        })
+        if status == 200 and isinstance(body, dict):
+            return bool(body.get("allowed", True))
+    except Exception as e:
+        print("check_rate_limit error:", e)
+    return True
 
 
 def products(request, category=None):
     categories = get_all_categories()
-    dynamodb = boto3.resource("dynamodb", region_name=settings.COGNITO["region"])
     items = []
 
     search = request.GET.get("search", "").strip().lower()
@@ -459,46 +466,27 @@ def products(request, category=None):
             "WomenClothes": ["women", "top", "dress", "mesh", "striped", "blouse"],
             "KidsClothes": ["kids", "child", "baby", "sweatshirt", "christmas"],
         }
-
         matched_category = None
         for table_name, words in keyword_map.items():
             if any(w in search for w in words):
                 matched_category = table_name
                 break
+        category = matched_category  # None if no keyword matched -> all
 
-        if matched_category:
-            category = matched_category
-        else:
-            category = None
+    if category and category not in categories:
+        messages.error(request, "Invalid category selected.")
+        return redirect("products")
 
+    # R2: no direct DynamoDB access. Fetch product data through the
+    # get-products Lambda in the app tier.
     try:
-        if category:
-            if category not in categories:
-                messages.error(request, "Invalid category selected.")
-                return redirect("products")
-
-            table = dynamodb.Table(category)
-            response = table.scan()
-            items = response.get("Items", [])
-
-            # attach category to every item
-            for item in items:
-                item["category"] = category
-
-        else:
-            for cat in categories:
-                table = dynamodb.Table(cat)
-                response = table.scan()
-                cat_items = response.get("Items", [])
-
-                # attach category to every item
-                for item in cat_items:
-                    item["category"] = cat
-
-                items.extend(cat_items)
-
-    except ClientError as e:
-        messages.error(request, f"DynamoDB error: {e.response['Error']['Message']}")
+        payload = {"category": category} if category else {}
+        status, data = _invoke_lambda("get-products", payload)
+        if status != 200 or not isinstance(data, list):
+            raise RuntimeError(f"get-products returned {status}: {data}")
+        items = data
+    except Exception as e:
+        messages.error(request, f"Product service error: {e}")
         return render(request, "products.html", {
             "products": [],
             "category": category,
@@ -508,10 +496,8 @@ def products(request, category=None):
             "REMOVE_ITEM_URL": "",
         })
 
-    # Build proxy image URLs — runs on the normal path, NOT inside except.
-    # The key in DynamoDB already includes "product-images/", so the proxy
-    # URL is /store/images/product-images/<filename>, served privately by
-    # store/views.serve_image via the S3 gateway endpoint.
+    # Build proxy image URLs. The key already includes "product-images/";
+    # store/views.serve_image fetches privately via the S3 gateway endpoint.
     for item in items:
         key = item.get("image")
         item["image_url"] = f"/store/images/{key}" if key else None
@@ -526,6 +512,7 @@ def products(request, category=None):
         "VIEW_CART_URL": lambda_cfg["view_cart"],
         "REMOVE_ITEM_URL": lambda_cfg["remove_cart_item"],
     })
+
 
 # =========================
 # CART / CHECKOUT
@@ -608,3 +595,30 @@ def get_location(request):
             'country_code': 'IE',
             'city': '',
         })
+
+# =========================
+# PRIVATE IMAGE PROXY (R7)
+# =========================
+@require_GET
+@cache_control(max_age=3600, private=True)
+def serve_image(request, key):
+    """
+    Serve a private S3 object through Django.
+
+    Traffic path: browser -> VPN -> ALB -> Django -> S3 gateway endpoint.
+    No presigned URL, no public S3 hostname, no public internet path.
+    """
+    s3 = boto3.client(
+        "s3",
+        region_name=settings.S3_REGION,
+        config=Config(connect_timeout=3, read_timeout=10),
+    )
+    try:
+        response = s3.get_object(Bucket=settings.S3_BUCKET, Key=key)
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise Http404
+        raise
+
+    content_type = response.get("ContentType", "image/jpeg")
+    return HttpResponse(response["Body"].read(), content_type=content_type)
