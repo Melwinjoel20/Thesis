@@ -273,9 +273,9 @@
   
         <div class="d-flex align-items-center">
         
-            {% if request.session.user_name %}
+            {% if request.session.user_email %}
                 <span class="navbar-text fw-semibold me-3" style="color: #1d3557;">
-                    {{ request.session.user_name }}
+                    {{ request.session.user_name|default:request.session.user_email }}
                 </span>
         
                 <a href="{% url 'logout' %}" class="btn btn-outline-primary rounded-pill px-3">
