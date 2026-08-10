@@ -1,11 +1,4 @@
-# =============================================================================
-# Use Case: Storage (Phase 2)
-# Deploys the private S3 bucket into the Hub VPC via VPC Endpoint.
-# No public access — replaces the public bucket from create_s3.py
-#
-# All VPC / route table IDs come from the networking layer via remote state
-# — apply usecase/networking first, nothing to copy-paste here.
-# =============================================================================
+
 
 data "aws_caller_identity" "current" {}
 

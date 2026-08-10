@@ -1,8 +1,5 @@
-# =============================================================================
+
 # Module: DynamoDB
-# Description: Creates DynamoDB tables dynamically from the tables map.
-#              PAY_PER_REQUEST billing — no capacity planning needed.
-# =============================================================================
 
 resource "aws_dynamodb_table" "this" {
   for_each = var.tables

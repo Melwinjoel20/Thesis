@@ -1,7 +1,7 @@
 {
     "region": "us-east-1",
-    "user_pool_id": "us-east-1_qZG5ba5hi",
-    "app_client_id": "66fjda74htf3q4ibpcaug5tj6g",
+    "user_pool_id": "us-east-1_kDsdKoUkG",
+    "app_client_id": "688n928tmkn7u94kecle9vst3c",
     "domain_url": "",
     "s3_logo_url": "https://easycart-private-dev-ue1-001.s3.us-east-1.amazonaws.com/images/EasyCartLogo.png",
     "dev_mode": false,
@@ -23,7 +23,7 @@
         "tax_calculator": "/store/api/tax/"
     },
     "orders_table": "Orders",
-    "sns_topic_arn": "arn:aws:sns:us-east-1:298550728605:EasyCartOrderNotifications",
+    "sns_topic_arn": "arn:aws:sns:us-east-1:264418110922:EasyCartOrderNotifications",
     "rate_limit": {
         "login": {
             "limit": 3,
@@ -31,7 +31,7 @@
         }
     },
     "RATE_LIMIT_TABLE": "RateLimits",
-    "app_client_secret": "12r03d64ab9i82kbh8aprrs3cfec1bh0hvopr4h09mcd2c2q307f",
+    "app_client_secret": "1o9tlhsh3ejq4fago7icriu2e9pqsvlph6cs1pcqdr824un4jt19",
     "admin_users_table": "EasyCartAdminUsers",
     "eb_application_name": "fe-ebs-app-easycart-dev-ue1-001",
     "eb_environment_name": "fe-ebs-env-easycart-dev-ue1-001",
@@ -40,10 +40,13 @@
     "eb_instance_profile": "LabInstanceProfile",
     "lambda_functions": {
         "add-to-cart": "app-fn-add-to-cart-easycart-dev-ue1-001",
+        "get-products": "app-fn-get-products-easycart-dev-ue1-001",
+        "manage-products": "app-fn-manage-products-easycart-dev-ue1-001",
         "place-order": "app-fn-place-order-easycart-dev-ue1-001",
+        "rate-limit": "app-fn-rate-limit-easycart-dev-ue1-001",
         "remove-cart-item": "app-fn-remove-cart-item-easycart-dev-ue1-001",
         "tax-calculator": "app-fn-tax-calculator-easycart-dev-ue1-001",
         "view-cart": "app-fn-view-cart-easycart-dev-ue1-001"
     },
-    "internal_api_base_url": "https://weqj1oaw9g-vpce-0e50e7a29967873b5.execute-api.us-east-1.amazonaws.com/internal"
+    "internal_api_base_url": "https://6mz9mm37pl-vpce-08286580714ce1bfe.execute-api.us-east-1.amazonaws.com/internal"
 }

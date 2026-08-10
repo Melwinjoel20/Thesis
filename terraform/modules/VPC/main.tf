@@ -1,13 +1,7 @@
-# =============================================================================
-# Module: VPC
-# Description: Creates a VPC with subnets, route tables, and optional
-#              Internet Gateway. Designed for hub-and-spoke topology on AWS.
-#              Follows the same dynamic patterns as the Azure Networking module.
-# =============================================================================
 
-# -----------------------------------------------------------------------------
-# VPC
-# -----------------------------------------------------------------------------
+# Module: VPC
+
+
 resource "aws_vpc" "this" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -18,9 +12,9 @@ resource "aws_vpc" "this" {
   })
 }
 
-# -----------------------------------------------------------------------------
+
 # Internet Gateway (only created if enable_igw = true — used for Hub VPC)
-# -----------------------------------------------------------------------------
+
 resource "aws_internet_gateway" "this" {
   count  = var.enable_igw ? 1 : 0
   vpc_id = aws_vpc.this.id
@@ -30,9 +24,9 @@ resource "aws_internet_gateway" "this" {
   })
 }
 
-# -----------------------------------------------------------------------------
+
 # Subnets — created dynamically from the subnets map variable
-# -----------------------------------------------------------------------------
+
 resource "aws_subnet" "this" {
   for_each = var.subnets
 
@@ -47,9 +41,8 @@ resource "aws_subnet" "this" {
   })
 }
 
-# -----------------------------------------------------------------------------
 # Route Tables — one per subnet group (public / private)
-# -----------------------------------------------------------------------------
+
 resource "aws_route_table" "this" {
   for_each = var.route_tables
 
@@ -72,9 +65,9 @@ resource "aws_route" "igw" {
   gateway_id             = aws_internet_gateway.this[0].id
 }
 
-# -----------------------------------------------------------------------------
+
 # Route Table Associations — map subnets to route tables
-# -----------------------------------------------------------------------------
+
 resource "aws_route_table_association" "this" {
   for_each = var.route_table_associations
 

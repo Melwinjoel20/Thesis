@@ -1,21 +1,4 @@
-# =============================================================================
-# Use Case: App (Phase 4)
-# Deploys Lambda functions and Cognito into the App Spoke VPC.
-# All Lambda functions run in private subnets — no public access.
-# Cognito issues JWT tokens used by the frontend and verified by Lambda.
-#
-# Wiring:
-#   - VPC / subnet / route table IDs come from usecase/networking remote state.
-#   - The Lambda execution role is looked up by name (LabRole in Learner Lab).
-#   - The order-notification SNS topic is created HERE (place-order publishes
-#     to it), with an optional email subscription.
-#   - Because the App VPC has no internet path, this stack also creates the
-#     endpoints the functions need to reach AWS APIs:
-#       * DynamoDB Gateway endpoint  (add/view/remove cart, place-order)
-#       * SNS Interface endpoint     (place-order notifications)
-#
-# Run AFTER usecase/networking. Build the zips first: bash ../../lambda/build.sh
-# =============================================================================
+
 
 data "terraform_remote_state" "networking" {
   backend = "s3"
@@ -26,7 +9,6 @@ data "terraform_remote_state" "networking" {
   }
 }
 
-# Learner Lab pre-creates LabRole — look it up instead of hardcoding the
 # account ID in an ARN.
 data "aws_iam_role" "lambda_exec" {
   name = var.LAMBDA_ROLE_NAME
@@ -37,9 +19,8 @@ data "aws_vpc" "app" {
   id = local.app_vpc_id
 }
 
-# -----------------------------------------------------------------------------
+
 # SNS — order notifications (published by place-order)
-# -----------------------------------------------------------------------------
 resource "aws_sns_topic" "orders" {
   name = "EasyCartOrderNotifications"
 
@@ -57,9 +38,7 @@ resource "aws_sns_topic_subscription" "orders_email" {
   endpoint  = var.ORDER_NOTIFICATION_EMAIL
 }
 
-# -----------------------------------------------------------------------------
-# Security groups
-# -----------------------------------------------------------------------------
+
 # Lambda functions only make outbound calls (DynamoDB, SNS) — no ingress.
 resource "aws_security_group" "lambda" {
   name        = "app-sg-lambda-${var.PRODUCT}-${var.ENVIRONMENT}-${var.REGION_SHORT}-001"
@@ -107,10 +86,10 @@ resource "aws_security_group" "vpce" {
   })
 }
 
-# -----------------------------------------------------------------------------
+
 # VPC endpoints — the App VPC is fully private, so AWS APIs must be reachable
 # through endpoints or every boto3 call inside Lambda will time out.
-# -----------------------------------------------------------------------------
+
 module "dynamodb_endpoint" {
   source = "../../modules/GatewayEndpoints"
 
@@ -151,12 +130,7 @@ resource "aws_vpc_endpoint" "sns" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  # API Gateway access logging is off unless explicitly enabled. Both the
-  # CloudWatch role ARN AND the log group ARN must be gated together —
-  # passing a log group ARN while the role ARN is empty makes the module
-  # try to enable access logging without an account-level CloudWatch role,
-  # which Learner Lab does not allow to be set ("CloudWatch Logs role ARN
-  # must be set in account settings to enable logging").
+
   api_logging_enabled = var.API_GW_ENABLE_LOGGING
 
   apigw_cloudwatch_role_arn = local.api_logging_enabled ? "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/LabRole" : ""
@@ -179,9 +153,9 @@ module "cognito" {
   })
 }
 
-# -----------------------------------------------------------------------------
+
 # Lambda — EasyCart microservices (private subnets, no public access)
-# -----------------------------------------------------------------------------
+
 module "lambda" {
   source = "../../modules/Lambda"
 

@@ -1,7 +1,4 @@
-# =============================================================================
-# Use Case: Storage — Dev Values
-# VPC / route table IDs are read from ../networking state automatically.
-# =============================================================================
+
 
 PRODUCT      = "easycart"
 ENVIRONMENT  = "dev"

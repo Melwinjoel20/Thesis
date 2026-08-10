@@ -8,7 +8,7 @@ Run AFTER the terraform stacks are applied:
     python3 scripts/generate_config.py
 
 Requires: terraform on PATH, and the stacks initialized in terraform/usecase/*.
-CI runs this right before building the EB bundle.
+
 """
 
 import json

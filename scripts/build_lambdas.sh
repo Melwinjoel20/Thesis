@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Packages each REAL Lambda function in infra/lambda/<name>/ into
-# infra/lambda/<name>.zip — the paths terraform/usecase/app expects
-# (LAMBDA_ZIP_DIR = ../../../infra/lambda).
-# Functions use only stdlib + boto3, so no pip step is needed.
-# Run from anywhere:  bash scripts/build_lambdas.sh
-# =============================================================================
+
 set -euo pipefail
 cd "$(dirname "$0")/../infra/lambda"
 

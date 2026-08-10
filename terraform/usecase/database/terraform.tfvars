@@ -1,8 +1,3 @@
-# =============================================================================
-# Use Case: Database — Dev Values
-# VPC / route table IDs are read from ../networking state automatically.
-# Table definitions live in main.tf.
-# =============================================================================
 
 PRODUCT      = "easycart"
 ENVIRONMENT  = "dev"

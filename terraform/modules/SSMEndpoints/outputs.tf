@@ -1,6 +1,6 @@
-# =============================================================================
+
 # Module: SSMEndpoints — Outputs
-# =============================================================================
+
 
 output "endpoint_security_group_id" {
   description = "Security group ID guarding the interface endpoints."

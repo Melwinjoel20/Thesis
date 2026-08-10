@@ -1,11 +1,5 @@
-# =============================================================================
+
 # Module: InternalApi
-# Description: PRIVATE REST API Gateway + Cognito JWT authorizer fronting a
-#              set of Lambda functions. No internet presence: only requests
-#              arriving through the given execute-api VPC endpoint (owned by
-#              the networking layer) are accepted, and every route requires
-#              a valid Cognito ID token before the Lambda is invoked.
-# =============================================================================
 
 resource "aws_api_gateway_rest_api" "this" {
   name        = "${var.name_prefix}-api-internal-${var.product}-${var.environment}-${var.region_short}-${var.name_suffix}"

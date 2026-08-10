@@ -1,8 +1,6 @@
-# =============================================================================
+
 # Module: InterfaceEndpoints
-# Description: Generic Interface VPC endpoints + a shared security group.
-#              Reusable for any AWS service (execute-api, sns, cognito-idp...).
-# =============================================================================
+
 
 resource "aws_security_group" "this" {
   name        = "${var.name_prefix}-sg-vpce-${var.product}-${var.environment}-${var.region_short}-${var.name_suffix}"

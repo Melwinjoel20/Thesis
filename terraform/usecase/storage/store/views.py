@@ -15,9 +15,9 @@ from django.views.decorators.http import require_GET
 from django.views.decorators.cache import cache_control
 
 
-# =========================
+
 # Home / Base
-# =========================
+
 def base(request):
     return render(request, 'base.html')
 
@@ -26,9 +26,9 @@ def home(request):
     return render(request, 'home.html')
 
 
-# =========================
+
 # Helpers
-# =========================
+
 def get_cognito_client():
     return boto3.client(
         "cognito-idp",
@@ -188,9 +188,9 @@ def login_view(request):
     return render(request, "login.html")
 
 
-# =========================
+
 # LOGOUT
-# =========================
+
 def logout_view(request):
     request.session.flush()
     clear_messages(request)
@@ -198,9 +198,9 @@ def logout_view(request):
     return redirect("login")
 
 
-# =========================
+
 # REGISTER
-# =========================
+
 def register(request):
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -271,9 +271,9 @@ def register(request):
     return render(request, "register.html")
 
 
-# =========================
+
 # VERIFY OTP
-# =========================
+
 def verify_otp(request):
     email = request.session.get("pending_email")
 
@@ -324,9 +324,9 @@ def verify_otp(request):
     return render(request, "verify_otp.html", {"email": email})
 
 
-# =========================
+
 # FORGOT PASSWORD
-# =========================
+
 def cognito_forgot_password(username: str):
     client = get_cognito_client()
     try:
@@ -361,9 +361,9 @@ def forgot_password(request):
     return render(request, "forgot_password.html")
 
 
-# =========================
+
 # RESET PASSWORD
-# =========================
+
 def cognito_confirm_new_password(username: str, code: str, new_password: str):
     client = get_cognito_client()
     try:
@@ -411,9 +411,8 @@ def reset_password(request):
     return render(request, "reset_password.html")
 
 
-# =========================
 # PRODUCTS
-# =========================
+
 def get_all_categories():
     return ["MenClothes", "WomenClothes", "KidsClothes"]
 
@@ -477,8 +476,7 @@ def products(request, category=None):
         messages.error(request, "Invalid category selected.")
         return redirect("products")
 
-    # R2: no direct DynamoDB access. Fetch product data through the
-    # get-products Lambda in the app tier.
+    # R2: no direct DynamoDB access. 
     try:
         payload = {"category": category} if category else {}
         status, data = _invoke_lambda("get-products", payload)
@@ -497,7 +495,7 @@ def products(request, category=None):
         })
 
     # Build proxy image URLs. The key already includes "product-images/";
-    # store/views.serve_image fetches privately via the S3 gateway endpoint.
+   
     for item in items:
         key = item.get("image")
         item["image_url"] = f"/store/images/{key}" if key else None
@@ -514,9 +512,9 @@ def products(request, category=None):
     })
 
 
-# =========================
+
 # CART / CHECKOUT
-# =========================
+
 def view_cart(request):
     print("SESSION DATA:", dict(request.session))
     print("USER_ID:", request.session.get("user_id"))
@@ -543,9 +541,9 @@ def order_confirmation(request):
     })
 
 
-# =========================
+
 # ADMIN HELPERS
-# =========================
+
 def get_user_groups(email):
     client = boto3.client("cognito-idp", region_name=settings.COGNITO["region"])
 
@@ -596,9 +594,9 @@ def get_location(request):
             'city': '',
         })
 
-# =========================
+
 # PRIVATE IMAGE PROXY (R7)
-# =========================
+
 @require_GET
 @cache_control(max_age=3600, private=True)
 def serve_image(request, key):
